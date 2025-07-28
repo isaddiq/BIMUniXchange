@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC BIM Network Diagram System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 5px;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .control-group {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select, input[type="range"], button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            color: white;
+            margin: 5px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 800px;
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .processing {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffd700;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .ifc-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .info-value {
+            color: #ffd700;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        #zoom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #ffcccb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ IFC BIM Network Analyzer</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-text">📁 Drop IFC File Here or Click to Browse</div>
+            <div class="upload-subtext">Supports .ifc files (Industry Foundation Classes)</div>
+            <input type="file" id="fileInput" accept=".ifc" />
+        </div>
+
+        <div id="processing" class="processing" style="display: none;">
+            <div class="spinner"></div>
+            <div>Processing IFC file...</div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="totalNodes">0</div>
+                <div class="stat-label">Total Nodes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEdges">0</div>
+                <div class="stat-label">Total Edges</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="hierarchyLevels">0</div>
+                <div class="stat-label">Hierarchy Levels</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="elementTypes">0</div>
+                <div class="stat-label">Element Types</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalElements">0</div>
+                <div class="stat-label">Total Elements</div>
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <div class="control-group">
+                <label>View Level:</label>
+                <select id="levelFilter">
+                    <option value="all">All Levels</option>
+                    <option value="0,1,2">Project + Site + Building</option>
+                    <option value="0,1,2,3">Up to Building Storeys</option>
+                    <option value="0,1,2,3,4" selected>Up to Element Types</option>
+                    <option value="0,1,2,3,4,5">Complete Hierarchy</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Element Type Filter:</label>
+                <select id="elementFilter">
+                    <option value="all">All Types</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Node Size: <span id="sizeValue">4</span></label>
+                <input type="range" id="nodeSize" min="1" max="10" value="4">
+            </div>
+            <div class="control-group">
+                <button id="resetView">Reset View</button>
+            </div>
+        </div>
+
+        <div id="network-container">
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Project</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Site/Building</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Building Storeys</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Spaces</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span>Element Types</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1abc9c;"></div>
+                    <span>Elements</span>
+                </div>
+            </div>
+            <div id="zoom-info">
+                Mouse wheel: zoom | Drag: pan | Click: node details
+            </div>
+        </div>
+
+        <div class="ifc-info" id="ifcInfo">
+            <h3>📊 IFC Structure Analysis</h3>
+            <div class="info-grid" id="infoGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // IFC Parser and Network Generator
+        class IFCNetworkAnalyzer {
+            constructor() {
+                this.ifcData = null;
+                this.networkData = { nodes: [], links: [] };
+                this.ifcEntities = new Map();
+                this.relationships = new Map();
+                this.elementCounts = {};
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadArea.addEventListener('drop', this.handleDrop.bind(this));
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+                document.getElementById('levelFilter').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('elementFilter').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('nodeSize').addEventListener('input', (e) => {
+                    document.getElementById('sizeValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('resetView').addEventListener('click', () => this.resetView());
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            async processFile(file) {
+                if (!file.name.toLowerCase().endsWith('.ifc')) {
+                    this.showError('Please select a valid IFC file (.ifc extension)');
+                    return;
+                }
+
+                this.showProcessing(true);
+                this.hideError();
+
+                try {
+                    const text = await this.readFileAsText(file);
+                    await this.parseIFC(text);
+                    this.buildNetworkStructure();
+                    this.showResults();
+                    this.initializeVisualization();
+                } catch (error) {
+                    console.error('Error processing IFC file:', error);
+                    this.showError(`Error processing IFC file: ${error.message}`);
+                } finally {
+                    this.showProcessing(false);
+                }
+            }
+
+            readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+
+            async parseIFC(text) {
+                const lines = text.split('\n');
+                const dataSection = lines.filter(line => line.trim().startsWith('#'));
+                
+                // Parse entities
+                for (const line of dataSection) {
+                    const match = line.match(/#(\d+)\s*=\s*([A-Z_]+)\((.*)\)/);
+                    if (match) {
+                        const [, id, type, params] = match;
+                        this.ifcEntities.set(parseInt(id), {
+                            id: parseInt(id),
+                            type: type,
+                            params: this.parseParams(params),
+                            rawLine: line.trim()
+                        });
+                    }
+                }
+
+                // Count element types
+                for (const entity of this.ifcEntities.values()) {
+                    this.elementCounts[entity.type] = (this.elementCounts[entity.type] || 0) + 1;
+                }
+
+                console.log('Parsed entities:', this.ifcEntities.size);
+                console.log('Element types:', Object.keys(this.elementCounts).length);
+            }
+
+            parseParams(paramString) {
+                // Simple parameter parsing - can be enhanced
+                const params = [];
+                let current = '';
+                let depth = 0;
+                let inString = false;
+
+                for (let i = 0; i < paramString.length; i++) {
+                    const char = paramString[i];
+                    
+                    if (char === "'" && paramString[i-1] !== '\\') {
+                        inString = !inString;
+                    }
+                    
+                    if (!inString) {
+                        if (char === '(') depth++;
+                        else if (char === ')') depth--;
+                        else if (char === ',' && depth === 0) {
+                            params.push(current.trim());
+                            current = '';
+                            continue;
+                        }
+                    }
+                    
+                    current += char;
+                }
+                
+                if (current.trim()) params.push(current.trim());
+                return params;
+            }
+
+            buildNetworkStructure() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Find key entities for hierarchy
+                const projects = Array.from(this.ifcEntities.values()).filter(e => e.type === 'IFCPROJECT');
+                const sites = Array.from(this.ifcEntities.values()).filter(e => e.type === 'IFCSITE');
+                const buildings = Array.from(this.ifcEntities.values()).filter(e => e.type === 'IFCBUILDING');
+                const storeys = Array.from(this.ifcEntities.values()).filter(e => e.type === 'IFCBUILDINGSTOREY');
+                const spaces = Array.from(this.ifcEntities.values()).filter(e => e.type === 'IFCSPACE');
+
+                // Level 0: Project Root
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: projects.length > 0 ? `Project: ${this.extractName(projects[0])}` : 'IFC Project',
+                    type: 'Project',
+                    level: 0,
+                    count: this.ifcEntities.size,
+                    size: 25,
+                    ifcType: 'IFCPROJECT'
+                });
+
+                // Level 1: Sites and Buildings
+                const siteBuildings = [...sites, ...buildings];
+                const level1Nodes = [];
+                siteBuildings.forEach(entity => {
+                    const id = `node_${nodeId++}`;
+                    const node = {
+                        id: id,
+                        label: `${entity.type === 'IFCSITE' ? 'Site' : 'Building'}: ${this.extractName(entity)}`,
+                        type: 'SiteBuilding',
+                        level: 1,
+                        size: 15,
+                        ifcType: entity.type,
+                        ifcId: entity.id
+                    };
+                    nodes.push(node);
+                    level1Nodes.push(node);
+                    links.push({ source: rootId, target: id });
+                });
+
+                // Level 2: Building Storeys
+                const level2Nodes = [];
+                storeys.forEach(storey => {
+                    const id = `node_${nodeId++}`;
+                    const node = {
+                        id: id,
+                        label: `Storey: ${this.extractName(storey)}`,
+                        type: 'BuildingStorey',
+                        level: 2,
+                        size: 10,
+                        ifcType: storey.type,
+                        ifcId: storey.id
+                    };
+                    nodes.push(node);
+                    level2Nodes.push(node);
+                    // Connect to first building if available
+                    const parentId = level1Nodes.length > 0 ? level1Nodes[0].id : rootId;
+                    links.push({ source: parentId, target: id });
+                });
+
+                // Level 3: Spaces
+                const level3Nodes = [];
+                spaces.slice(0, 50).forEach(space => { // Limit for performance
+                    const id = `node_${nodeId++}`;
+                    const node = {
+                        id: id,
+                        label: `Space: ${this.extractName(space)}`,
+                        type: 'Space',
+                        level: 3,
+                        size: 6,
+                        ifcType: space.type,
+                        ifcId: space.id
+                    };
+                    nodes.push(node);
+                    level3Nodes.push(node);
+                    // Connect to first storey if available
+                    const parentId = level2Nodes.length > 0 ? level2Nodes[0].id : 
+                                   level1Nodes.length > 0 ? level1Nodes[0].id : rootId;
+                    links.push({ source: parentId, target: id });
+                });
+
+                // Level 4: Element Types
+                const level4Nodes = [];
+                const buildingElementTypes = Object.keys(this.elementCounts).filter(type => 
+                    type.startsWith('IFC') && 
+                    !['IFCPROJECT', 'IFCSITE', 'IFCBUILDING', 'IFCBUILDINGSTOREY', 'IFCSPACE'].includes(type) &&
+                    ['WALL', 'COLUMN', 'BEAM', 'SLAB', 'DOOR', 'WINDOW', 'STAIR', 'ROOF'].some(elem => type.includes(elem))
+                );
+
+                buildingElementTypes.slice(0, 20).forEach(elementType => {
+                    const id = `node_${nodeId++}`;
+                    const count = this.elementCounts[elementType];
+                    const node = {
+                        id: id,
+                        label: elementType.replace('IFC', ''),
+                        type: 'ElementType',
+                        level: 4,
+                        count: count,
+                        size: Math.max(4, Math.log(count + 1) * 2),
+                        ifcType: elementType
+                    };
+                    nodes.push(node);
+                    level4Nodes.push(node);
+                    // Connect to spaces if available, otherwise to storeys
+                    const parentId = level3Nodes.length > 0 ? level3Nodes[Math.floor(Math.random() * level3Nodes.length)].id :
+                                   level2Nodes.length > 0 ? level2Nodes[Math.floor(Math.random() * level2Nodes.length)].id :
+                                   level1Nodes.length > 0 ? level1Nodes[0].id : rootId;
+                    links.push({ source: parentId, target: id });
+                });
+
+                // Level 5: Individual Elements (sample)
+                let elementsSampled = 0;
+                for (const elementType of buildingElementTypes.slice(0, 10)) {
+                    if (elementsSampled >= 100) break; // Performance limit
+                    
+                    const entities = Array.from(this.ifcEntities.values()).filter(e => e.type === elementType);
+                    const typeNode = level4Nodes.find(n => n.ifcType === elementType);
+                    
+                    if (typeNode) {
+                        entities.slice(0, Math.min(5, 100 - elementsSampled)).forEach(entity => {
+                            const id = `node_${nodeId++}`;
+                            nodes.push({
+                                id: id,
+                                label: `${elementType.replace('IFC', '')} ${entity.id}`,
+                                type: 'Element',
+                                level: 5,
+                                size: 3,
+                                ifcType: entity.type,
+                                ifcId: entity.id,
+                                entityData: entity
+                            });
+                            links.push({ source: typeNode.id, target: id });
+                            elementsSampled++;
+                        });
+                    }
+                }
+
+                this.networkData = { nodes, links };
+                console.log('Network built:', nodes.length, 'nodes,', links.length, 'links');
+            }
+
+            extractName(entity) {
+                // Try to extract name from parameters
+                if (entity.params && entity.params.length > 0) {
+                    for (const param of entity.params) {
+                        if (param.startsWith("'") && param.endsWith("'")) {
+                            const name = param.slice(1, -1);
+                            if (name && name !== 'Default' && name.length > 0) {
+                                return name;
+                            }
+                        }
+                    }
+                }
+                return `${entity.type}_${entity.id}`;
+            }
+
+            showProcessing(show) {
+                document.getElementById('processing').style.display = show ? 'block' : 'none';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            showResults() {
+                // Update statistics
+                document.getElementById('totalNodes').textContent = this.networkData.nodes.length.toLocaleString();
+                document.getElementById('totalEdges').textContent = this.networkData.links.length.toLocaleString();
+                document.getElementById('hierarchyLevels').textContent = '6';
+                document.getElementById('elementTypes').textContent = Object.keys(this.elementCounts).length.toLocaleString();
+                document.getElementById('totalElements').textContent = this.ifcEntities.size.toLocaleString();
+
+                // Show UI elements
+                document.getElementById('stats').style.display = 'flex';
+                document.getElementById('controls').style.display = 'block';
+                document.getElementById('network-container').style.display = 'block';
+                document.getElementById('ifcInfo').style.display = 'block';
+
+                // Populate element filter
+                const elementFilter = document.getElementById('elementFilter');
+                elementFilter.innerHTML = '<option value="all">All Types</option>';
+                
+                const elementTypes = [...new Set(this.networkData.nodes.filter(n => n.level === 4).map(n => n.ifcType))];
+                elementTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type.replace('IFC', '');
+                    elementFilter.appendChild(option);
+                });
+
+                // Populate info grid
+                this.populateInfoGrid();
+            }
+
+            populateInfoGrid() {
+                const infoGrid = document.getElementById('infoGrid');
+                infoGrid.innerHTML = '';
+
+                const topElements = Object.entries(this.elementCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 12);
+
+                topElements.forEach(([type, count]) => {
+                    const item = document.createElement('div');
+                    item.className = 'info-item';
+                    item.innerHTML = `
+                        <div class="info-label">${type.replace('IFC', '')}</div>
+                        <div class="info-value">${count.toLocaleString()}</div>
+                    `;
+                    infoGrid.appendChild(item);
+                });
+            }
+
+            initializeVisualization() {
+                this.createVisualization();
+            }
+
+            createVisualization() {
+                // Clear previous visualization
+                d3.select('#network-container svg').remove();
+
+                const container = d3.select('#network-container');
+                const width = 1600;
+                const height = 800;
+
+                const svg = container.append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g');
+
+                // Level colors
+                const levelColors = {
+                    0: '#e74c3c', // Project
+                    1: '#3498db', // Site/Building  
+                    2: '#2ecc71', // Building Storeys
+                    3: '#f39c12', // Spaces
+                    4: '#9b59b6', // Element Types
+                    5: '#1abc9c'  // Elements
+                };
+
+                // Zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 4])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+
+                svg.call(zoom);
+
+                // Store references for updates
+                this.svg = svg;
+                this.g = g;
+                this.zoom = zoom;
+                this.levelColors = levelColors;
+                this.width = width;
+                this.height = height;
+
+                this.updateVisualization();
+            }
+
+            updateVisualization() {
+                if (!this.g) return;
+
+                this.g.selectAll('*').remove();
+
+                // Filter data
+                const levelFilter = document.getElementById('levelFilter').value;
+                const elementFilter = document.getElementById('elementFilter').value;
+                
+                let filteredNodes = [...this.networkData.nodes];
+                let filteredLinks = [...this.networkData.links];
+
+                if (levelFilter !== 'all') {
+                    const allowedLevels = levelFilter.split(',').map(Number);
+                    filteredNodes = filteredNodes.filter(d => allowedLevels.includes(d.level));
+                    filteredLinks = filteredLinks.filter(d => 
+                        filteredNodes.find(n => n.id === d.source.id || n.id === d.source) &&
+                        filteredNodes.find(n => n.id === d.target.id || n.id === d.target)
+                    );
+                }
+
+                if (elementFilter !== 'all') {
+                    filteredNodes = filteredNodes.filter(d => 
+                        d.level <= 4 || d.ifcType === elementFilter
+                    );
+                    filteredLinks = filteredLinks.filter(d => 
+                        filteredNodes.find(n => n.id === d.source.id || n.id === d.source) &&
+                        filteredNodes.find(n => n.id === d.target.id || n.id === d.target)
+                    );
+                }
+
+                // Create simulation
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks).id(d => d.id).distance(d => {
+                        switch (d.source.level) {
+                            case 0: return 300;
+                            case 1: return 200;
+                            case 2: return 150;
+                            case 3: return 100;
+                            case 4: return 60;
+                            default: return 40;
+                        }
+                    }))
+                    .force('charge', d3.forceManyBody().strength(d => {
+                        switch (d.level) {
+                            case 0: return -3000;
+                            case 1: return -1500;
+                            case 2: return -800;
+                            case 3: return -400;
+                            case 4: return -200;
+                            case 5: return -50;
+                            default: return -100;
+                        }
+                    }))
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .force('collision', d3.forceCollide().radius(d => d.size + 3));
+
+                // Create links
+                const link = this.g.append('g')
+                    .selectAll('line')
+                    .data(filteredLinks)
+                    .join('line')
+                    .attr('stroke', '#999')
+                    .attr('stroke-opacity', 0.6)
+                    .attr('stroke-width', d => {
+                        if (d.source.level === 0) return 3;
+                        if (d.source.level === 1) return 2;
+                        return 1;
+                    });
+
+                // Create nodes
+                const nodeSize = +document.getElementById('nodeSize').value;
+                
+                const node = this.g.append('g')
+                    .selectAll('circle')
+                    .data(filteredNodes)
+                    .join('circle')
+                    .attr('r', d => d.size * nodeSize)
+                    .attr('fill', d => this.levelColors[d.level] || '#666')
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .style('cursor', 'pointer')
+                    .call(d3.drag()
+                        .on('start', this.dragstarted.bind(this))
+                        .on('drag', this.dragged.bind(this))
+                        .on('end', this.dragended.bind(this)));
+
+                // Add labels
+                const label = this.g.append('g')
+                    .selectAll('text')
+                    .data(filteredNodes.filter(d => d.level <= 3))
+                    .join('text')
+                    .text(d => {
+                        const maxLength = d.level === 0 ? 20 : d.level === 1 ? 15 : 10;
+                        return d.label.length > maxLength ? d.label.substring(0, maxLength) + '...' : d.label;
+                    })
+                    .attr('font-size', d => d.level === 0 ? '12px' : d.level === 1 ? '10px' : '8px')
+                    .attr('font-weight', 'bold')
+                    .attr('fill', '#fff')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '0.35em')
+                    .style('pointer-events', 'none');
+
+                // Tooltip
+                const tooltip = d3.select('#tooltip');
+                node.on('mouseover', (event, d) => {
+                    tooltip.style('opacity', 1)
+                        .html(`
+                            <strong>${d.label}</strong><br/>
+                            Type: ${d.type}<br/>
+                            Level: ${d.level}<br/>
+                            IFC Type: ${d.ifcType || 'N/A'}<br/>
+                            ${d.count ? `Count: ${d.count.toLocaleString()}` : ''}
+                            ${d.ifcId ? `<br/>IFC ID: #${d.ifcId}` : ''}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseout', () => {
+                    tooltip.style('opacity', 0);
+                });
+
+                // Simulation tick
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+
+                    node
+                        .attr('cx', d => d.x)
+                        .attr('cy', d => d.y);
+
+                    label
+                        .attr('x', d => d.x)
+                        .attr('y', d => d.y);
+                });
+
+                this.simulation = simulation;
+            }
+
+            dragstarted(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            dragended(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            resetView() {
+                if (this.svg && this.zoom) {
+                    this.svg.transition().duration(750).call(
+                        this.zoom.transform,
+                        d3.zoomIdentity.translate(100, 100).scale(0.7)
+                    );
+                }
+            }
+        }
+
+        // Initialize the application
+        const ifcAnalyzer = new IFCNetworkAnalyzer();
+    </script>
+</body>
+</html>

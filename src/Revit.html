@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revit M3 Building BIM Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 5px;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .control-group {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select,
+        input[type="range"] {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            color: white;
+            margin: 5px;
+        }
+
+        select option {
+            background: #ffffff;
+            color: white;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 800px;
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 250px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .category-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .category-name {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 8px;
+        }
+
+        .category-count {
+            font-size: 1.3em;
+            color: #ffd700;
+        }
+
+        .hierarchy-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .level-label {
+            font-weight: bold;
+        }
+
+        .level-count {
+            color: #ffd700;
+            font-size: 1.2em;
+        }
+
+        #zoom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏢 Revit M3 Building BIM Network</h1>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">652</div>
+                <div class="stat-label">Total Nodes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">652</div>
+                <div class="stat-label">Total Edges</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Hierarchy Levels</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">37</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4,412</div>
+                <div class="stat-label">Total Elements</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>View Level:</label>
+                <select id="levelFilter">
+                    <option value="all">All Levels</option>
+                    <option value="0,1">Project + Categories Only</option>
+                    <option value="0,1,2">Project + Categories + Families</option>
+                    <option value="0,1,2,3" selected>Up to Family Types</option>
+                    <option value="0,1,2,3,4">Complete Hierarchy</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Category Filter:</label>
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Node Size: <span id="sizeValue">4</span></label>
+                <input type="range" id="nodeSize" min="1" max="10" value="4">
+            </div>
+        </div>
+
+        <div id="network-container">
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Project Root</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span>Categories</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Families</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f39c12;"></div>
+                    <span>Family Types</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span>Elements</span>
+                </div>
+            </div>
+            <div id="zoom-info">
+                Mouse wheel: zoom | Drag: pan | Click: node details
+            </div>
+        </div>
+
+        <div class="hierarchy-info">
+            <h3>📊 BIM Hierarchy Structure</h3>
+            <div class="level-info">
+                <span class="level-label">Level 0: Project Root</span>
+                <span class="level-count">1 node</span>
+            </div>
+            <div class="level-info">
+                <span class="level-label">Level 1: Categories</span>
+                <span class="level-count">37 nodes</span>
+            </div>
+            <div class="level-info">
+                <span class="level-label">Level 2: Families</span>
+                <span class="level-count">96 nodes</span>
+            </div>
+            <div class="level-info">
+                <span class="level-label">Level 3: Family Types</span>
+                <span class="level-count">150 nodes</span>
+            </div>
+            <div class="level-info">
+                <span class="level-label">Level 4: Individual Elements</span>
+                <span class="level-count">368 sample nodes</span>
+            </div>
+        </div>
+
+        <div class="hierarchy-info">
+            <h3>🏗️ Top Element Categories</h3>
+            <div class="category-grid" id="categoryGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Revit BIM network data
+        const revitData = {
+            categoryCounts: {
+                'Structural Columns': 988,
+                'Walls': 602,
+                'Structural Framing': 406,
+                'Pipes': 378,
+                'Curtain Wall Mullions': 363,
+                'Pipe Fittings': 345,
+                'Floors': 174,
+                'Lines: <Room Separation>': 141,
+                'Furniture': 123,
+                'Curtain Panels': 101,
+                'Electrical Fixtures': 101,
+                'Lighting Fixtures': 97,
+                'Walls: Curtain Wall Grids': 90,
+                'Fire Alarm Devices': 65,
+                'Doors': 43,
+                'Stairs: Supports': 42,
+                'Views': 37,
+                'Windows': 37,
+                'Model Groups': 37,
+                'Plumbing Fixtures': 33,
+                'Generic Models': 30,
+                'Piping Systems': 26,
+                'Lighting Devices': 22,
+                'Mechanical Equipment': 21,
+                'Communication Devices': 19,
+                'Ceilings': 16,
+                'Electrical Equipment': 14,
+                'Railings': 12,
+                'Pipe Accessories': 12,
+                'Stairs: Runs': 10,
+                'Railings: Top Rails': 10,
+                'Stairs': 5,
+                'Stairs: Landings': 5,
+                'Topography': 4
+            }
+        };
+
+        // Generate network data for Revit
+        function generateRevitNetworkData() {
+            const nodes = [];
+            const links = [];
+
+            // Level 0: Project Root
+            nodes.push({
+                id: 'PROJECT_ROOT',
+                label: 'Revit M3 Building',
+                type: 'Project',
+                level: 0,
+                count: 4412,
+                size: 25
+            });
+
+            // Level 1: Categories
+            Object.entries(revitData.categoryCounts).forEach(([category, count]) => {
+                const categoryId = `CAT_${category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                nodes.push({
+                    id: categoryId,
+                    label: category,
+                    type: 'Category',
+                    level: 1,
+                    count: count,
+                    size: Math.max(6, Math.log(count) * 2)
+                });
+
+                links.push({
+                    source: 'PROJECT_ROOT',
+                    target: categoryId
+                });
+
+                // Level 2: Sample families (limited for performance)
+                const familyCount = Math.min(Math.floor(count / 50), 5);
+                for (let i = 0; i < familyCount; i++) {
+                    const familyId = `FAM_${categoryId}_${i}`;
+                    nodes.push({
+                        id: familyId,
+                        label: `${category} Family ${i + 1}`,
+                        type: 'Family',
+                        level: 2,
+                        parentCategory: category,
+                        size: 4
+                    });
+
+                    links.push({
+                        source: categoryId,
+                        target: familyId
+                    });
+
+                    // Level 3: Family types
+                    const typeCount = Math.min(2, Math.floor(count / 100));
+                    for (let j = 0; j < typeCount; j++) {
+                        const typeId = `TYPE_${familyId}_${j}`;
+                        nodes.push({
+                            id: typeId,
+                            label: `Type ${j + 1}`,
+                            type: 'FamilyType',
+                            level: 3,
+                            parentFamily: `${category} Family ${i + 1}`,
+                            size: 3
+                        });
+
+                        links.push({
+                            source: familyId,
+                            target: typeId
+                        });
+
+                        // Level 4: Sample elements
+                        const elementCount = Math.min(2, Math.floor(count / 200));
+                        for (let k = 0; k < elementCount; k++) {
+                            const elementId = `EL_${typeId}_${k}`;
+                            nodes.push({
+                                id: elementId,
+                                label: `Element ${k + 1}`,
+                                type: 'Element',
+                                level: 4,
+                                category: category,
+                                size: 2
+                            });
+
+                            links.push({
+                                source: typeId,
+                                target: elementId
+                            });
+                        }
+                    }
+                }
+            });
+
+            return { nodes, links };
+        }
+
+        // Color mapping for hierarchy levels
+        const levelColors = {
+            0: '#e74c3c', // Project - Red
+            1: '#3498db', // Categories - Blue
+            2: '#2ecc71', // Families - Green
+            3: '#f39c12', // Family Types - Orange
+            4: '#9b59b6'  // Elements - Purple
+        };
+
+        // Network visualization setup
+        const container = d3.select('#network-container');
+        const width = 1600;
+        const height = 800;
+
+        const svg = container.append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const g = svg.append('g');
+
+        // Zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Tooltip
+        const tooltip = d3.select('#tooltip');
+
+        // Generate network
+        const data = generateRevitNetworkData();
+        let simulation;
+
+        function createSimulation(nodes, links) {
+            return d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
+                    switch (d.source.level) {
+                        case 0: return 250;
+                        case 1: return 150;
+                        case 2: return 100;
+                        case 3: return 60;
+                        default: return 40;
+                    }
+                }))
+                .force('charge', d3.forceManyBody().strength(d => {
+                    switch (d.level) {
+                        case 0: return -2000;
+                        case 1: return -800;
+                        case 2: return -400;
+                        case 3: return -200;
+                        case 4: return -50;
+                        default: return -100;
+                    }
+                }))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => d.size + 3));
+        }
+
+        function updateVisualization() {
+            g.selectAll('*').remove();
+
+            // Filter data based on controls
+            const levelFilter = d3.select('#levelFilter').node().value;
+            const categoryFilter = d3.select('#categoryFilter').node().value;
+
+            let filteredNodes = [...data.nodes];
+            let filteredLinks = [...data.links];
+
+            if (levelFilter !== 'all') {
+                const allowedLevels = levelFilter.split(',').map(Number);
+                filteredNodes = filteredNodes.filter(d => allowedLevels.includes(d.level));
+                filteredLinks = filteredLinks.filter(d =>
+                    filteredNodes.find(n => n.id === d.source.id || n.id === d.source) &&
+                    filteredNodes.find(n => n.id === d.target.id || n.id === d.target)
+                );
+            }
+
+            if (categoryFilter !== 'all') {
+                filteredNodes = filteredNodes.filter(d =>
+                    d.level <= 1 || d.type === 'Category' ||
+                    d.parentCategory === categoryFilter || d.category === categoryFilter
+                );
+                filteredLinks = filteredLinks.filter(d =>
+                    filteredNodes.find(n => n.id === d.source.id || n.id === d.source) &&
+                    filteredNodes.find(n => n.id === d.target.id || n.id === d.target)
+                );
+            }
+
+            simulation = createSimulation(filteredNodes, filteredLinks);
+
+            // Create links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(filteredLinks)
+                .join('line')
+                .attr('stroke', '#999')
+                .attr('stroke-opacity', 0.6)
+                .attr('stroke-width', d => {
+                    if (d.source.level === 0) return 3;
+                    if (d.source.level === 1) return 2;
+                    return 1;
+                });
+
+            // Create nodes
+            const nodeSize = +d3.select('#nodeSize').node().value;
+
+            const node = g.append('g')
+                .selectAll('circle')
+                .data(filteredNodes)
+                .join('circle')
+                .attr('r', d => d.size * nodeSize)
+                .attr('fill', d => levelColors[d.level] || '#666')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .style('cursor', 'pointer')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            // Add labels for important nodes
+            const label = g.append('g')
+                .selectAll('text')
+                .data(filteredNodes.filter(d => d.level <= 2))
+                .join('text')
+                .text(d => d.level === 0 ? d.label :
+                    d.level === 1 ? d.label.substring(0, 15) + (d.label.length > 15 ? '...' : '') :
+                        d.label.substring(0, 10) + (d.label.length > 10 ? '...' : ''))
+                .attr('font-size', d => d.level === 0 ? '14px' : d.level === 1 ? '10px' : '8px')
+                .attr('font-weight', 'bold')
+                .attr('fill', '#fff')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.35em')
+                .style('pointer-events', 'none');
+
+            // Tooltip events
+            node.on('mouseover', (event, d) => {
+                tooltip.style('opacity', 1)
+                    .html(`
+                        <strong>${d.label}</strong><br/>
+                        Type: ${d.type}<br/>
+                        Level: ${d.level}<br/>
+                        ${d.count ? `Count: ${d.count.toLocaleString()}` : ''}
+                        ${d.parentCategory ? `<br/>Category: ${d.parentCategory}` : ''}
+                        ${d.category ? `<br/>Category: ${d.category}` : ''}
+                    `)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 10) + 'px');
+            })
+                .on('mouseout', () => {
+                    tooltip.style('opacity', 0);
+                });
+
+            // Simulation tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+        }
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Initialize filters
+        const categoryFilter = d3.select('#categoryFilter');
+        Object.keys(revitData.categoryCounts).slice(0, 15).forEach(category => {
+            categoryFilter.append('option').attr('value', category).text(category);
+        });
+
+        // Event listeners
+        d3.select('#levelFilter').on('change', updateVisualization);
+        d3.select('#categoryFilter').on('change', updateVisualization);
+        d3.select('#nodeSize').on('input', function () {
+            d3.select('#sizeValue').text(this.value);
+            updateVisualization();
+        });
+
+        // Populate category grid
+        function populateCategoryGrid() {
+            const grid = d3.select('#categoryGrid');
+            Object.entries(revitData.categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 12)
+                .forEach(([category, count]) => {
+                    grid.append('div')
+                        .attr('class', 'category-card')
+                        .html(`
+                            <div class="category-name">${category}</div>
+                            <div class="category-count">${count.toLocaleString()}</div>
+                        `);
+                });
+        }
+
+        // Initialize
+        populateCategoryGrid();
+        updateVisualization();
+        svg.call(zoom.transform, d3.zoomIdentity.translate(100, 100).scale(0.7));
+    </script>
+</body>
+
+</html>
