@@ -40,6 +40,24 @@
 Released under the [MIT License](LICENSE). Please cite the authors when using these tools in academic or industry projects.
 
 ---
+## 📚 Citation
+
+If you use **BIMUniXchange** in your research, teaching, or development work, please cite it using one of the following formats:
+
+**APA (7th Edition):**  
+`isaddiq. (2025). BIMUniXchange [Computer software]. GitHub. https://github.com/isaddiq/BIMUniXchange`
+
+**BibTeX:**
+```bibtex
+@software{isaddiq_BIMUniXchange_2025,
+  author       = {Saddiq Ur Rehman},
+  title        = {BIMUniXchange},
+  year         = {2025},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/isaddiq/BIMUniXchange}},
+}
+---
+
 
 ## 📬 Contact
 
