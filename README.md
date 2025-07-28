@@ -4,7 +4,7 @@
 ## 💡 Getting Started
 
 1. **Export from Revit**  
-   - Install `ReUniXchange.bundle` into Revit (2024–2026).
+   - Install `ReUniXchange.msi` into Revit (2024–2026).
    - Use the “Export to OBJ+CSV” command.
 
 2. **Export from Archicad**  
