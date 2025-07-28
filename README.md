@@ -1,53 +1,140 @@
+# 🏗️ BIMUniXchange
+
+<div align="center">
+
+![BIM Badge](https://img.shields.io/badge/BIM-Interoperability-blue?style=for-the-badge&logo=autodesk)
+![Unity Badge](https://img.shields.io/badge/Unity-XR%20Ready-black?style=for-the-badge&logo=unity)
+![XR Badge](https://img.shields.io/badge/XR-Compatible-purple?style=for-the-badge&logo=oculus)
+![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+*Seamless AEC-to-XR Pipeline for Immersive Construction Visualization*
+
+</div>
 
 ---
 
-## 💡 Getting Started
+## 🚀 **Quick Start Guide**
 
-1. **Export from Revit**  
-   - Install `ReUniXchange.msi` into Revit (2024–2026).
-   - Use the “Export to OBJ+CSV” command.
+<details>
+<summary>🔧 <strong>Revit Workflow</strong></summary>
 
-2. **Export from Archicad**  
-   - Run the Python scripts in `ArchiUniXchange/`.
-   - Generate FBX geometry and CSV metadata.
+### 📐 Export from Autodesk Revit
+```
+1️⃣ Install ReUniXchange.msi into Revit (2024–2026)
+2️⃣ Launch the "Export to OBJ+CSV" command
+3️⃣ Generate building geometry and element metadata
+```
+> **Compatible Versions:** Revit 2024, 2025, 2026
 
-3. **Import into Unity**  
-   - Add the `UnityPackage/` to your project.
-   - Drop exported OBJ/FBX and CSV into `Assets/`.
-   - Open the BIMUniXchange window to assign metadata and build hierarchies.
+</details>
 
-4. **Deploy to XR**  
-   - Configure OpenXR settings.
-   - Build and run on your target device (Quest 3, S22 Ultra, desktop VR).
+<details>
+<summary>🏛️ <strong>ArchiCAD Workflow</strong></summary>
+
+### 📊 Export from GRAPHISOFT ArchiCAD
+```
+1️⃣ Navigate to ArchiUniXchange/ directory
+2️⃣ Execute Python automation scripts
+3️⃣ Generate FBX geometry and CSV metadata files
+```
+> **Output Format:** FBX + CSV metadata for seamless Unity integration
+
+</details>
+
+<details>
+<summary>🎮 <strong>Unity Integration</strong></summary>
+
+### 🔗 Import into Unity Engine
+```
+1️⃣ Import UnityPackage/ into your Unity project
+2️⃣ Drop exported OBJ/FBX and CSV files into Assets/
+3️⃣ Launch BIMUniXchange window for metadata assignment
+4️⃣ Build hierarchical BIM structures automatically
+```
+> **Features:** Automated metadata mapping, parametric object hierarchy, material assignment
+
+</details>
+
+<details>
+<summary>🥽 <strong>XR Deployment</strong></summary>
+
+### 🌐 Deploy to Extended Reality
+```
+1️⃣ Configure OpenXR settings for target platform
+2️⃣ Build and deploy to your XR device
+3️⃣ Experience immersive construction visualization
+```
+> **Supported Platforms:** Quest 3, Samsung S22 Ultra, Desktop VR Headsets
+
+</details>
 
 ---
 
-## 🧪 Evaluation
+## 📊 **Performance Benchmarks**
 
-- **Interoperability**  
-  Compared Revit/ArchiCAD CSV exports against IFC schema with network‑graph analysis.
-
-- **Performance**  
-  Tested on models with >4,000 elements; maintains interactive frame rates in XR.
-
-- **Usability**  
-  User studies confirmed clear metadata presentation, high visual fidelity, and effective 4D simulation comprehension.
+<table>
+<tr>
+<th>🔄 <strong>Interoperability</strong></th>
+<th>⚡ <strong>Performance</strong></th>
+<th>👤 <strong>Usability</strong></th>
+</tr>
+<tr>
+<td>
+• CSV exports validated against IFC schema<br>
+• Network-graph analysis for data integrity<br>
+• Cross-platform BIM compatibility
+</td>
+<td>
+• Tested with 4,000+ building elements<br>
+• Maintains interactive frame rates in XR<br>
+• Optimized geometry processing pipeline
+</td>
+<td>
+• Clear metadata presentation<br>
+• High-fidelity visual rendering<br>
+• Effective 4D construction simulation
+</td>
+</tr>
+</table>
 
 ---
 
-## 📜 License
+## 🏆 **Key Features**
 
-Released under the [MIT License](LICENSE). Please cite the authors when using these tools in academic or industry projects.
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔧 **Multi-CAD Support** | Revit & ArchiCAD integration | ✅ Active |
+| 📱 **Cross-Platform XR** | Quest, Mobile, Desktop VR | ✅ Active |
+| 🏗️ **4D Simulation** | Construction sequence visualization | ✅ Active |
+| 📊 **Metadata Preservation** | Complete BIM data transfer | ✅ Active |
+| ⚡ **Real-time Performance** | Interactive XR experience | ✅ Active |
 
 ---
-## 📚 Citation
 
-If you use **BIMUniXchange** in your research, teaching, or development work, please cite it using one of the following formats:
+## 📜 **License & Attribution**
 
-**APA (7th Edition):**  
-`isaddiq. (2025). BIMUniXchange [Computer software]. GitHub. https://github.com/isaddiq/BIMUniXchange`
+<div align="center">
 
-**BibTeX:**
+**Released under the [MIT License](LICENSE)**
+
+*Please cite the authors when implementing these tools in academic research or industry projects*
+
+</div>
+
+---
+
+## 📚 **Academic Citation**
+
+<details>
+<summary>📖 <strong>Citation Formats</strong></summary>
+
+### **APA (7th Edition)**
+```
+isaddiq. (2025). BIMUniXchange [Computer software]. GitHub. 
+https://github.com/isaddiq/BIMUniXchange
+```
+
+### **BibTeX**
 ```bibtex
 @software{isaddiq_BIMUniXchange_2025,
   author       = {Saddiq Ur Rehman},
@@ -56,11 +143,23 @@ If you use **BIMUniXchange** in your research, teaching, or development work, pl
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/isaddiq/BIMUniXchange}},
 }
+```
+
+</details>
+
 ---
 
+## 👨‍🎓 **Research Contact**
 
-## 📬 Contact
+<div align="center">
 
-**Saddiq Ur Rehman**  
-PhD Candidate, Kyung Hee University  
-✉️ saddiqurrehman@khu.ac.kr
+**Saddiq Ur Rehman**  
+*PhD Candidate in Construction Technology*  
+🏛️ **Kyung Hee University**  
+📧 **saddiqurrehman@khu.ac.kr**
+
+---
+
+<sub>🏗️ *Advancing AEC Industry through Immersive Technology Solutions* 🥽</sub>
+
+</div>
