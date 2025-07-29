@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://isaddiq.github.io/BIMUniXchange/sitemap.xml
