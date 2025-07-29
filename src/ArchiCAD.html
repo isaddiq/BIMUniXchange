@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archicad CSV BIM Network Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .mode-selector {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .upload-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 5px;
+            min-width: 140px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        select,
+        input[type="range"],
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        .relationship-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 15px;
+            font-size: 0.85em;
+            border-radius: 20px;
+        }
+
+        .toggle-btn.active {
+            background: rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 800px;
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 350px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip-row {
+            margin: 2px 0;
+        }
+
+        .tooltip-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .tooltip-value {
+            color: #ffd700;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-height: 400px;
+            overflow-y: auto;
+            max-width: 250px;
+        }
+
+        .legend-section {
+            margin-bottom: 15px;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 11px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .processing {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffd700;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .element-analysis {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .analysis-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        .analysis-content {
+            font-size: 0.9em;
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #ffcccb;
+            display: none;
+        }
+
+        #zoom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .sample-notice {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .node-search {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .search-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: white;
+            width: 200px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏗️ Archicad CSV BIM Network Analyzer</h1>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('sample')">View Sample Data</button>
+            <button class="mode-btn" onclick="setMode('upload')">Upload Your CSV</button>
+        </div>
+
+        <div class="sample-notice" id="sampleNotice">
+            <strong>Sample Data Loaded:</strong> Archicad BIM Model with 4,035 elements and 589 properties
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-text">📁 Drop CSV File Here or Click to Browse</div>
+                <div class="upload-subtext">Supports Archicad-exported CSV files with BIM metadata</div>
+                <input type="file" id="fileInput" accept=".csv" />
+            </div>
+        </div>
+
+        <div id="processing" class="processing" style="display: none;">
+            <div class="spinner"></div>
+            <div>Processing CSV data...</div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalElements">0</div>
+                <div class="stat-label">Total Elements</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="elementTypes">0</div>
+                <div class="stat-label">Element Types</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalZones">0</div>
+                <div class="stat-label">Zones</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalMaterials">0</div>
+                <div class="stat-label">Materials</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalProfiles">0</div>
+                <div class="stat-label">Profiles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeRelationships">0</div>
+                <div class="stat-label">Relationships</div>
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <div class="control-row">
+                <div class="control-group" style="flex: 2;">
+                    <label>Network View:</label>
+                    <select id="viewMode">
+                        <option value="element-hierarchy">Element Type Hierarchy</option>
+                        <option value="spatial-zones">Spatial Zones Network</option>
+                        <option value="material-network">Material Relationships</option>
+                        <option value="classification">Classification Structure</option>
+                        <option value="combined">Combined View</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Element Filter:</label>
+                    <select id="elementFilter" multiple size="5">
+                        <option value="all" selected>All Elements</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group" style="flex: 3;">
+                    <label>Show Relationships:</label>
+                    <div class="relationship-toggles">
+                        <button class="toggle-btn active" data-rel="hierarchy">Hierarchy</button>
+                        <button class="toggle-btn active" data-rel="spatial">Spatial</button>
+                        <button class="toggle-btn" data-rel="material">Materials</button>
+                        <button class="toggle-btn" data-rel="hotlink">Hotlinks</button>
+                        <button class="toggle-btn" data-rel="classification">Classification</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Node Size: <span id="sizeValue">1</span></label>
+                    <input type="range" id="nodeSize" min="0.5" max="3" value="1" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Link Strength: <span id="strengthValue">1</span></label>
+                    <input type="range" id="linkStrength" min="0.1" max="3" value="1" step="0.1">
+                </div>
+                <div class="control-group">
+                    <button id="resetView">Reset View</button>
+                    <button id="exportData">Export Network</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="network-container">
+            <div class="node-search">
+                <input type="text" class="search-input" id="nodeSearch" placeholder="Search elements...">
+            </div>
+            <div class="legend" id="legend">
+                <!-- Populated dynamically -->
+            </div>
+            <div id="zoom-info">
+                Mouse wheel: zoom | Drag: pan | Click: details | Double-click: focus
+            </div>
+        </div>
+
+        <div class="element-analysis" id="elementAnalysis">
+            <h3>📊 Data Analysis</h3>
+            <div class="analysis-grid" id="analysisGrid">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Archicad CSV BIM Network Analyzer
+        class ArchicadCSVAnalyzer {
+            constructor() {
+                this.csvData = null;
+                this.networkData = { nodes: [], links: [] };
+                this.elementMap = new Map();
+                this.zoneMap = new Map();
+                this.materialMap = new Map();
+                this.profileMap = new Map();
+                this.classificationMap = new Map();
+                this.currentMode = 'sample';
+                this.activeRelationships = new Set(['hierarchy', 'spatial']);
+                this.colorScheme = {
+                    elementTypes: {
+                        'Column': '#e74c3c',
+                        'Beam': '#f39c12',
+                        'Slab': '#3498db',
+                        'Wall': '#2ecc71',
+                        'Door': '#9b59b6',
+                        'Window': '#1abc9c',
+                        'Morph': '#e67e22',
+                        'Object': '#34495e',
+                        'Zone': '#16a085',
+                        'Stair': '#8e44ad',
+                        'Roof': '#c0392b',
+                        'Mesh': '#d35400',
+                        'Shell': '#27ae60',
+                        'Railing': '#2980b9'
+                    },
+                    nodeTypes: {
+                        'root': '#ffd700',
+                        'category': '#ff6b6b',
+                        'type': '#4ecdc4',
+                        'element': '#45b7d1',
+                        'zone': '#9b59b6',
+                        'material': '#2ecc71',
+                        'profile': '#f39c12',
+                        'classification': '#e74c3c'
+                    }
+                };
+                this.setupEventListeners();
+                this.loadSampleData();
+            }
+
+            setupEventListeners() {
+                // Mode selector is handled by global functions
+
+                // Upload handling
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea?.addEventListener('click', () => fileInput.click());
+                uploadArea?.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadArea?.addEventListener('drop', this.handleDrop.bind(this));
+                fileInput?.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // Control listeners
+                document.getElementById('viewMode').addEventListener('change', () => this.rebuildNetwork());
+                document.getElementById('elementFilter').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('nodeSize').addEventListener('input', (e) => {
+                    document.getElementById('sizeValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('linkStrength').addEventListener('input', (e) => {
+                    document.getElementById('strengthValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('resetView').addEventListener('click', () => this.resetView());
+                document.getElementById('exportData').addEventListener('click', () => this.exportNetworkData());
+                document.getElementById('nodeSearch').addEventListener('input', (e) => this.searchNodes(e.target.value));
+
+                // Relationship toggles
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const rel = btn.dataset.rel;
+                        btn.classList.toggle('active');
+                        if (btn.classList.contains('active')) {
+                            this.activeRelationships.add(rel);
+                        } else {
+                            this.activeRelationships.delete(rel);
+                        }
+                        this.rebuildNetwork();
+                    });
+                });
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            async loadSampleData() {
+                // Create sample data based on the CSV structure
+                this.showProcessing(true);
+
+                // Simulate sample data structure
+                const sampleElements = [
+                    { Element_GUID: 'COL_001', Element_Type: 'Column', 'Building Material Name': 'Concrete', 'Related Zone Name': 'Zone A', 'Volume (Net)': 2.5 },
+                    { Element_GUID: 'COL_002', Element_Type: 'Column', 'Building Material Name': 'Steel', 'Related Zone Name': 'Zone A', 'Volume (Net)': 1.8 },
+                    { Element_GUID: 'BEAM_001', Element_Type: 'Beam', 'Building Material Name': 'Steel', 'Related Zone Name': 'Zone B', 'Volume (Net)': 3.2 },
+                    { Element_GUID: 'SLAB_001', Element_Type: 'Slab', 'Composite Name': 'Floor Composite', 'Related Zone Name': 'Zone A', 'Volume (Net)': 15.6 },
+                    { Element_GUID: 'WALL_001', Element_Type: 'Wall', 'Building Material Name': 'Brick', 'From Zone': 'Zone A', 'To Zone': 'Zone B', 'Volume (Net)': 8.4 },
+                    { Element_GUID: 'DOOR_001', Element_Type: 'Door', 'Library Part Name': 'Door 24', 'From Zone': 'Zone A', 'To Zone': 'Zone B' },
+                    { Element_GUID: 'WIN_001', Element_Type: 'Window', 'Library Part Name': 'Window 18', 'Related Zone Name': 'Zone A' }
+                ];
+
+                // Add more sample elements with counts matching the original data
+                const elementCounts = {
+                    'Column': 1447, 'Morph': 735, 'Beam': 720, 'Slab': 466,
+                    'Wall': 300, 'Object': 203, 'Window': 105, 'Door': 25,
+                    'Zone': 24, 'Mesh': 4, 'Stair': 2, 'Shell': 2, 'Roof': 1, 'Railing': 1
+                };
+
+                // Generate full sample dataset
+                const fullSampleData = [];
+                for (const [type, count] of Object.entries(elementCounts)) {
+                    for (let i = 0; i < Math.min(count, 100); i++) { // Limit for performance
+                        fullSampleData.push({
+                            Element_GUID: `${type.toUpperCase()}_${String(i + 1).padStart(4, '0')}`,
+                            Element_Type: type,
+                            'Building Material Name': this.getRandomMaterial(),
+                            'Related Zone Name': `Zone ${String.fromCharCode(65 + Math.floor(Math.random() * 10))}`,
+                            'Volume (Net)': (Math.random() * 10).toFixed(2),
+                            'Complex Profile Name': Math.random() > 0.7 ? `Profile ${Math.floor(Math.random() * 20) + 1}` : '',
+                            'Classification_ARCHICAD_분류': Math.floor(Math.random() * 5) + 1,
+                            'Design Option Name': Math.random() > 0.8 ? `Option ${Math.floor(Math.random() * 3) + 1}` : '',
+                            'From Zone': type === 'Wall' || type === 'Door' ? `Zone ${String.fromCharCode(65 + Math.floor(Math.random() * 10))}` : '',
+                            'To Zone': type === 'Wall' || type === 'Door' ? `Zone ${String.fromCharCode(65 + Math.floor(Math.random() * 10))}` : ''
+                        });
+                    }
+                }
+
+                this.csvData = fullSampleData;
+                this.processCSVData();
+                this.showProcessing(false);
+            }
+
+            getRandomMaterial() {
+                const materials = ['Concrete', 'Steel', 'Brick', 'Wood', 'Glass', 'Plaster', 'Insulation', 'Metal Panel'];
+                return materials[Math.floor(Math.random() * materials.length)];
+            }
+
+            async processFile(file) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    this.showError('Please select a valid CSV file');
+                    return;
+                }
+
+                this.showProcessing(true);
+                this.hideError();
+
+                try {
+                    const text = await this.readFileAsText(file);
+                    Papa.parse(text, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            this.csvData = results.data;
+                            this.processCSVData();
+                            this.showProcessing(false);
+                        },
+                        error: (error) => {
+                            this.showError(`Error parsing CSV: ${error.message}`);
+                            this.showProcessing(false);
+                        }
+                    });
+                } catch (error) {
+                    this.showError(`Error reading file: ${error.message}`);
+                    this.showProcessing(false);
+                }
+            }
+
+            readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+
+            processCSVData() {
+                // Clear existing maps
+                this.elementMap.clear();
+                this.zoneMap.clear();
+                this.materialMap.clear();
+                this.profileMap.clear();
+                this.classificationMap.clear();
+
+                // Process each row
+                this.csvData.forEach(row => {
+                    const guid = row['Element_GUID'];
+                    const type = row['Element_Type'];
+
+                    if (guid && type) {
+                        // Store element
+                        this.elementMap.set(guid, row);
+
+                        // Process zones
+                        const zones = [
+                            row['Related Zone Name'],
+                            row['From Zone'],
+                            row['To Zone']
+                        ].filter(z => z && z.trim());
+
+                        zones.forEach(zone => {
+                            if (!this.zoneMap.has(zone)) {
+                                this.zoneMap.set(zone, new Set());
+                            }
+                            this.zoneMap.get(zone).add(guid);
+                        });
+
+                        // Process materials
+                        const materials = [
+                            row['Building Material Name'],
+                            row['Composite Name']
+                        ].filter(m => m && m.trim());
+
+                        materials.forEach(material => {
+                            if (!this.materialMap.has(material)) {
+                                this.materialMap.set(material, new Set());
+                            }
+                            this.materialMap.get(material).add(guid);
+                        });
+
+                        // Process profiles
+                        const profile = row['Complex Profile Name'];
+                        if (profile && profile.trim()) {
+                            if (!this.profileMap.has(profile)) {
+                                this.profileMap.set(profile, new Set());
+                            }
+                            this.profileMap.get(profile).add(guid);
+                        }
+
+                        // Process classifications
+                        const classification = row['Classification_ARCHICAD_분류'];
+                        if (classification) {
+                            const classKey = `Class_${classification}`;
+                            if (!this.classificationMap.has(classKey)) {
+                                this.classificationMap.set(classKey, new Set());
+                            }
+                            this.classificationMap.get(classKey).add(guid);
+                        }
+                    }
+                });
+
+                this.updateStats();
+                this.populateFilters();
+                this.buildNetwork();
+                this.updateAnalysis();
+                this.initializeVisualization();
+            }
+
+            updateStats() {
+                // Count unique element types
+                const elementTypes = new Set();
+                this.elementMap.forEach(elem => {
+                    if (elem['Element_Type']) {
+                        elementTypes.add(elem['Element_Type']);
+                    }
+                });
+
+                document.getElementById('totalElements').textContent = this.elementMap.size.toLocaleString();
+                document.getElementById('elementTypes').textContent = elementTypes.size.toLocaleString();
+                document.getElementById('totalZones').textContent = this.zoneMap.size.toLocaleString();
+                document.getElementById('totalMaterials').textContent = this.materialMap.size.toLocaleString();
+                document.getElementById('totalProfiles').textContent = this.profileMap.size.toLocaleString();
+
+                // Count active relationships
+                let relationshipCount = 0;
+                this.networkData.links.forEach(() => relationshipCount++);
+                document.getElementById('activeRelationships').textContent = relationshipCount.toLocaleString();
+            }
+
+            populateFilters() {
+                const elementFilter = document.getElementById('elementFilter');
+                elementFilter.innerHTML = '<option value="all" selected>All Elements</option>';
+
+                // Get unique element types
+                const elementTypes = new Map();
+                this.elementMap.forEach(elem => {
+                    const type = elem['Element_Type'];
+                    if (type) {
+                        elementTypes.set(type, (elementTypes.get(type) || 0) + 1);
+                    }
+                });
+
+                // Sort by count and add to filter
+                Array.from(elementTypes.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([type, count]) => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = `${type} (${count})`;
+                        elementFilter.appendChild(option);
+                    });
+            }
+
+            buildNetwork() {
+                const viewMode = document.getElementById('viewMode').value;
+
+                switch (viewMode) {
+                    case 'element-hierarchy':
+                        this.buildElementHierarchy();
+                        break;
+                    case 'spatial-zones':
+                        this.buildSpatialNetwork();
+                        break;
+                    case 'material-network':
+                        this.buildMaterialNetwork();
+                        break;
+                    case 'classification':
+                        this.buildClassificationNetwork();
+                        break;
+                    case 'combined':
+                        this.buildCombinedNetwork();
+                        break;
+                }
+            }
+
+            buildElementHierarchy() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'BIM Model',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Group elements by type
+                const typeGroups = new Map();
+                this.elementMap.forEach((elem, guid) => {
+                    const type = elem['Element_Type'];
+                    if (type) {
+                        if (!typeGroups.has(type)) {
+                            typeGroups.set(type, []);
+                        }
+                        typeGroups.get(type).push(elem);
+                    }
+                });
+
+                // Create type nodes
+                const typeNodes = new Map();
+                typeGroups.forEach((elements, type) => {
+                    const typeId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: typeId,
+                        label: type,
+                        type: 'type',
+                        elementType: type,
+                        level: 1,
+                        count: elements.length,
+                        size: Math.max(10, Math.min(25, Math.log(elements.length + 1) * 5))
+                    });
+                    typeNodes.set(type, typeId);
+
+                    if (this.activeRelationships.has('hierarchy')) {
+                        links.push({ source: rootId, target: typeId, type: 'hierarchy' });
+                    }
+                });
+
+                // Add individual elements (limited for performance)
+                const elementLimit = 200;
+                let elementsAdded = 0;
+
+                typeGroups.forEach((elements, type) => {
+                    const typeNodeId = typeNodes.get(type);
+                    const elementsToShow = Math.min(elements.length, Math.floor(elementLimit / typeGroups.size));
+
+                    elements.slice(0, elementsToShow).forEach(elem => {
+                        const elemId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: elemId,
+                            label: elem['Element_GUID'] || `${type}_${elementsAdded}`,
+                            type: 'element',
+                            elementType: type,
+                            level: 2,
+                            size: 5,
+                            data: elem
+                        });
+
+                        if (this.activeRelationships.has('hierarchy')) {
+                            links.push({ source: typeNodeId, target: elemId, type: 'hierarchy' });
+                        }
+                        elementsAdded++;
+                    });
+                });
+
+                // Add spatial relationships if active
+                if (this.activeRelationships.has('spatial')) {
+                    const nodeMap = new Map();
+                    nodes.forEach(node => {
+                        if (node.data && node.data['Element_GUID']) {
+                            nodeMap.set(node.data['Element_GUID'], node.id);
+                        }
+                    });
+
+                    this.elementMap.forEach((elem, guid) => {
+                        const fromZone = elem['From Zone'];
+                        const toZone = elem['To Zone'];
+
+                        if (fromZone && toZone && nodeMap.has(guid)) {
+                            // Find nodes for zones
+                            const fromNode = nodes.find(n => n.label === fromZone && n.type === 'zone');
+                            const toNode = nodes.find(n => n.label === toZone && n.type === 'zone');
+
+                            if (fromNode && toNode) {
+                                links.push({
+                                    source: fromNode.id,
+                                    target: toNode.id,
+                                    type: 'spatial',
+                                    element: guid
+                                });
+                            }
+                        }
+                    });
+                }
+
+                this.networkData = { nodes, links };
+            }
+
+            buildSpatialNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Spatial Structure',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Create zone nodes
+                const zoneNodes = new Map();
+                this.zoneMap.forEach((elements, zoneName) => {
+                    const zoneId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: zoneId,
+                        label: zoneName,
+                        type: 'zone',
+                        level: 1,
+                        count: elements.size,
+                        size: Math.max(10, Math.min(20, Math.log(elements.size + 1) * 5))
+                    });
+                    zoneNodes.set(zoneName, zoneId);
+                    links.push({ source: rootId, target: zoneId, type: 'hierarchy' });
+                });
+
+                // Create zone-to-zone relationships based on elements
+                this.elementMap.forEach((elem, guid) => {
+                    const fromZone = elem['From Zone'];
+                    const toZone = elem['To Zone'];
+
+                    if (fromZone && toZone && zoneNodes.has(fromZone) && zoneNodes.has(toZone)) {
+                        links.push({
+                            source: zoneNodes.get(fromZone),
+                            target: zoneNodes.get(toZone),
+                            type: 'connection',
+                            element: elem['Element_Type']
+                        });
+                    }
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildMaterialNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Materials',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Create material nodes
+                const materialNodes = new Map();
+                this.materialMap.forEach((elements, material) => {
+                    const matId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: matId,
+                        label: material,
+                        type: 'material',
+                        level: 1,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(20, Math.log(elements.size + 1) * 4))
+                    });
+                    materialNodes.set(material, matId);
+                    links.push({ source: rootId, target: matId, type: 'hierarchy' });
+                });
+
+                // Add element types using each material
+                const materialTypeMap = new Map();
+                this.elementMap.forEach((elem) => {
+                    const material = elem['Building Material Name'] || elem['Composite Name'];
+                    const type = elem['Element_Type'];
+
+                    if (material && type) {
+                        const key = `${material}|${type}`;
+                        if (!materialTypeMap.has(key)) {
+                            materialTypeMap.set(key, { material, type, count: 0 });
+                        }
+                        materialTypeMap.get(key).count++;
+                    }
+                });
+
+                materialTypeMap.forEach(({ material, type, count }) => {
+                    if (materialNodes.has(material)) {
+                        const typeId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: typeId,
+                            label: `${type} (${count})`,
+                            type: 'type',
+                            elementType: type,
+                            level: 2,
+                            count: count,
+                            size: Math.max(5, Math.min(10, Math.log(count + 1) * 3))
+                        });
+                        links.push({ source: materialNodes.get(material), target: typeId, type: 'usage' });
+                    }
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildClassificationNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Classifications',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Create classification nodes
+                this.classificationMap.forEach((elements, classification) => {
+                    const classId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: classId,
+                        label: classification.replace('Class_', 'Classification '),
+                        type: 'classification',
+                        level: 1,
+                        count: elements.size,
+                        size: Math.max(10, Math.min(20, Math.log(elements.size + 1) * 5))
+                    });
+                    links.push({ source: rootId, target: classId, type: 'hierarchy' });
+
+                    // Group by element type
+                    const typeCount = new Map();
+                    elements.forEach(guid => {
+                        const elem = this.elementMap.get(guid);
+                        if (elem && elem['Element_Type']) {
+                            const type = elem['Element_Type'];
+                            typeCount.set(type, (typeCount.get(type) || 0) + 1);
+                        }
+                    });
+
+                    // Add type nodes
+                    typeCount.forEach((count, type) => {
+                        const typeId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: typeId,
+                            label: `${type} (${count})`,
+                            type: 'type',
+                            elementType: type,
+                            level: 2,
+                            count: count,
+                            size: Math.max(5, Math.min(10, Math.log(count + 1) * 3))
+                        });
+                        links.push({ source: classId, target: typeId, type: 'contains' });
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildCombinedNetwork() {
+                // This creates a comprehensive view combining multiple relationship types
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'BIM Model',
+                    type: 'root',
+                    level: 0,
+                    size: 35
+                });
+
+                // Add main category nodes
+                const categories = [
+                    { id: 'elements', label: 'Elements', type: 'category' },
+                    { id: 'zones', label: 'Zones', type: 'category' },
+                    { id: 'materials', label: 'Materials', type: 'category' }
+                ];
+
+                const categoryNodes = new Map();
+                categories.forEach(cat => {
+                    const catId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: catId,
+                        label: cat.label,
+                        type: cat.type,
+                        level: 1,
+                        size: 25
+                    });
+                    categoryNodes.set(cat.id, catId);
+                    links.push({ source: rootId, target: catId, type: 'hierarchy' });
+                });
+
+                // Add element types
+                const typeNodes = new Map();
+                const elementTypes = new Map();
+                this.elementMap.forEach(elem => {
+                    const type = elem['Element_Type'];
+                    if (type) {
+                        elementTypes.set(type, (elementTypes.get(type) || 0) + 1);
+                    }
+                });
+
+                elementTypes.forEach((count, type) => {
+                    const typeId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: typeId,
+                        label: `${type} (${count})`,
+                        type: 'type',
+                        elementType: type,
+                        level: 2,
+                        count: count,
+                        size: Math.max(8, Math.min(20, Math.log(count + 1) * 4))
+                    });
+                    typeNodes.set(type, typeId);
+                    links.push({ source: categoryNodes.get('elements'), target: typeId, type: 'hierarchy' });
+                });
+
+                // Add zones
+                const zoneNodes = new Map();
+                this.zoneMap.forEach((elements, zoneName) => {
+                    const zoneId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: zoneId,
+                        label: zoneName,
+                        type: 'zone',
+                        level: 2,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(15, Math.log(elements.size + 1) * 4))
+                    });
+                    zoneNodes.set(zoneName, zoneId);
+                    links.push({ source: categoryNodes.get('zones'), target: zoneId, type: 'hierarchy' });
+                });
+
+                // Add zone connections
+                if (this.activeRelationships.has('spatial')) {
+                    const zoneConnections = new Map();
+                    this.elementMap.forEach(elem => {
+                        const fromZone = elem['From Zone'];
+                        const toZone = elem['To Zone'];
+
+                        if (fromZone && toZone) {
+                            const key = `${fromZone}|${toZone}`;
+                            if (!zoneConnections.has(key)) {
+                                zoneConnections.set(key, 0);
+                            }
+                            zoneConnections.set(key, zoneConnections.get(key) + 1);
+                        }
+                    });
+
+                    zoneConnections.forEach((count, key) => {
+                        const [from, to] = key.split('|');
+                        if (zoneNodes.has(from) && zoneNodes.has(to)) {
+                            links.push({
+                                source: zoneNodes.get(from),
+                                target: zoneNodes.get(to),
+                                type: 'spatial',
+                                strength: Math.min(count / 10, 3)
+                            });
+                        }
+                    });
+                }
+
+                // Add materials
+                if (this.activeRelationships.has('material')) {
+                    this.materialMap.forEach((elements, material) => {
+                        if (elements.size > 5) { // Filter small materials
+                            const matId = `node_${nodeId++}`;
+                            nodes.push({
+                                id: matId,
+                                label: material,
+                                type: 'material',
+                                level: 2,
+                                count: elements.size,
+                                size: Math.max(6, Math.min(12, Math.log(elements.size + 1) * 3))
+                            });
+                            links.push({ source: categoryNodes.get('materials'), target: matId, type: 'hierarchy' });
+
+                            // Link to element types
+                            const typeUsage = new Map();
+                            elements.forEach(guid => {
+                                const elem = this.elementMap.get(guid);
+                                if (elem && elem['Element_Type']) {
+                                    typeUsage.set(elem['Element_Type'], (typeUsage.get(elem['Element_Type']) || 0) + 1);
+                                }
+                            });
+
+                            typeUsage.forEach((count, type) => {
+                                if (typeNodes.has(type) && count > 3) {
+                                    links.push({
+                                        source: matId,
+                                        target: typeNodes.get(type),
+                                        type: 'material',
+                                        strength: Math.min(count / 20, 2)
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+
+                this.networkData = { nodes, links };
+            }
+
+            rebuildNetwork() {
+                this.buildNetwork();
+                this.updateVisualization();
+            }
+
+            initializeVisualization() {
+                this.createVisualization();
+            }
+
+            createVisualization() {
+                // Clear previous visualization
+                d3.select('#network-container svg').remove();
+
+                const container = d3.select('#network-container');
+                const width = container.node().getBoundingClientRect().width;
+                const height = 800;
+
+                const svg = container.append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g');
+
+                // Define gradients for links
+                const defs = svg.append('defs');
+
+                // Zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 10])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+
+                svg.call(zoom);
+
+                // Store references
+                this.svg = svg;
+                this.g = g;
+                this.zoom = zoom;
+                this.width = width;
+                this.height = height;
+
+                this.updateVisualization();
+            }
+
+            updateVisualization() {
+                if (!this.g) return;
+
+                this.g.selectAll('*').remove();
+
+                // Filter data based on selected elements
+                const elementFilter = document.getElementById('elementFilter');
+                const selectedTypes = Array.from(elementFilter.selectedOptions).map(opt => opt.value);
+
+                let filteredNodes = [...this.networkData.nodes];
+                let filteredLinks = [...this.networkData.links];
+
+                if (!selectedTypes.includes('all') && selectedTypes.length > 0) {
+                    // Keep nodes that match selected types or are connected to them
+                    const keepNodes = new Set();
+
+                    filteredNodes.forEach(node => {
+                        if (node.level === 0 || node.level === 1 ||
+                            (node.elementType && selectedTypes.includes(node.elementType))) {
+                            keepNodes.add(node.id);
+                        }
+                    });
+
+                    // Keep parent nodes
+                    let changed = true;
+                    while (changed) {
+                        changed = false;
+                        filteredLinks.forEach(link => {
+                            const sourceId = link.source.id || link.source;
+                            const targetId = link.target.id || link.target;
+
+                            if (keepNodes.has(targetId) && !keepNodes.has(sourceId)) {
+                                keepNodes.add(sourceId);
+                                changed = true;
+                            }
+                        });
+                    }
+
+                    filteredNodes = filteredNodes.filter(n => keepNodes.has(n.id));
+                }
+
+                // Filter links
+                const nodeIds = new Set(filteredNodes.map(n => n.id));
+                filteredLinks = filteredLinks.filter(l =>
+                    nodeIds.has(l.source.id || l.source) &&
+                    nodeIds.has(l.target.id || l.target)
+                );
+
+                // Get scale values
+                const nodeScale = parseFloat(document.getElementById('nodeSize').value);
+                const linkStrength = parseFloat(document.getElementById('linkStrength').value);
+
+                // Create force simulation
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks)
+                        .id(d => d.id)
+                        .distance(d => {
+                            const baseDistance = d.source.level === 0 ? 200 :
+                                d.source.level === 1 ? 150 : 100;
+                            return baseDistance / linkStrength;
+                        })
+                        .strength(d => (d.strength || 1) * linkStrength))
+                    .force('charge', d3.forceManyBody()
+                        .strength(d => {
+                            const baseStrength = d.level === 0 ? -2000 :
+                                d.level === 1 ? -1000 : -400;
+                            return baseStrength * linkStrength;
+                        }))
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .force('collision', d3.forceCollide()
+                        .radius(d => (d.size || 5) * nodeScale + 5));
+
+                // Create link groups
+                const linkGroup = this.g.append('g').attr('class', 'links');
+
+                const link = linkGroup.selectAll('line')
+                    .data(filteredLinks)
+                    .join('line')
+                    .attr('stroke', d => {
+                        switch (d.type) {
+                            case 'hierarchy': return '#999';
+                            case 'spatial': return '#9b59b6';
+                            case 'material': return '#2ecc71';
+                            case 'usage': return '#3498db';
+                            case 'connection': return '#e74c3c';
+                            default: return '#666';
+                        }
+                    })
+                    .attr('stroke-opacity', d => d.type === 'hierarchy' ? 0.6 : 0.4)
+                    .attr('stroke-width', d => {
+                        if (d.strength) return Math.min(d.strength * 2, 4);
+                        return d.type === 'hierarchy' ? 2 : 1;
+                    })
+                    .attr('stroke-dasharray', d => d.type === 'spatial' ? '5,5' : null);
+
+                // Create node groups
+                const nodeGroup = this.g.append('g').attr('class', 'nodes');
+
+                const node = nodeGroup.selectAll('g')
+                    .data(filteredNodes)
+                    .join('g')
+                    .call(d3.drag()
+                        .on('start', this.dragstarted.bind(this))
+                        .on('drag', this.dragged.bind(this))
+                        .on('end', this.dragended.bind(this)));
+
+                // Add circles
+                node.append('circle')
+                    .attr('r', d => (d.size || 5) * nodeScale)
+                    .attr('fill', d => {
+                        if (d.elementType && this.colorScheme.elementTypes[d.elementType]) {
+                            return this.colorScheme.elementTypes[d.elementType];
+                        }
+                        return this.colorScheme.nodeTypes[d.type] || '#95a5a6';
+                    })
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .style('cursor', 'pointer');
+
+                // Add labels for important nodes
+                node.filter(d => d.level <= 1 || (d.level === 2 && d.count > 20))
+                    .append('text')
+                    .text(d => {
+                        const maxLength = d.level === 0 ? 20 : d.level === 1 ? 15 : 12;
+                        const label = d.label || '';
+                        return label.length > maxLength ? label.substring(0, maxLength) + '...' : label;
+                    })
+                    .attr('font-size', d => d.level === 0 ? '14px' : d.level === 1 ? '12px' : '10px')
+                    .attr('font-weight', d => d.level <= 1 ? 'bold' : 'normal')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', d => (d.size || 5) * nodeScale + 15)
+                    .style('pointer-events', 'none');
+
+                // Tooltip
+                const tooltip = d3.select('#tooltip');
+                node.on('mouseover', (event, d) => {
+                    let content = `<div class="tooltip-row"><span class="tooltip-label">Label:</span> <span class="tooltip-value">${d.label}</span></div>`;
+                    content += `<div class="tooltip-row"><span class="tooltip-label">Type:</span> <span class="tooltip-value">${d.type}</span></div>`;
+
+                    if (d.count) {
+                        content += `<div class="tooltip-row"><span class="tooltip-label">Count:</span> <span class="tooltip-value">${d.count}</span></div>`;
+                    }
+
+                    if (d.data) {
+                        // Show key properties from the CSV data
+                        const props = ['Volume (Net)', 'Building Material Name', 'Related Zone Name', 'Area'];
+                        props.forEach(prop => {
+                            if (d.data[prop]) {
+                                content += `<div class="tooltip-row"><span class="tooltip-label">${prop}:</span> <span class="tooltip-value">${d.data[prop]}</span></div>`;
+                            }
+                        });
+                    }
+
+                    tooltip.style('opacity', 1)
+                        .html(content)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                    .on('mouseout', () => {
+                        tooltip.style('opacity', 0);
+                    })
+                    .on('dblclick', (event, d) => {
+                        this.focusOnNode(d);
+                    });
+
+                // Update positions on tick
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+
+                    node.attr('transform', d => `translate(${d.x},${d.y})`);
+                });
+
+                // Update legend
+                this.updateLegend();
+
+                this.simulation = simulation;
+            }
+
+            updateLegend() {
+                const legend = document.getElementById('legend');
+                legend.innerHTML = '';
+
+                // Node types section
+                const nodeSection = document.createElement('div');
+                nodeSection.className = 'legend-section';
+                nodeSection.innerHTML = '<div class="legend-title">Node Types</div>';
+
+                const nodeTypes = [
+                    { type: 'root', label: 'Root' },
+                    { type: 'category', label: 'Category' },
+                    { type: 'type', label: 'Element Type' },
+                    { type: 'element', label: 'Element' },
+                    { type: 'zone', label: 'Zone' },
+                    { type: 'material', label: 'Material' },
+                    { type: 'classification', label: 'Classification' }
+                ];
+
+                nodeTypes.forEach(({ type, label }) => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <div class="legend-color" style="background: ${this.colorScheme.nodeTypes[type] || '#95a5a6'};"></div>
+                        <span>${label}</span>
+                    `;
+                    nodeSection.appendChild(item);
+                });
+
+                legend.appendChild(nodeSection);
+
+                // Element types section
+                const elementSection = document.createElement('div');
+                elementSection.className = 'legend-section';
+                elementSection.innerHTML = '<div class="legend-title">Element Types</div>';
+
+                // Show only visible element types
+                const visibleTypes = new Set();
+                this.networkData.nodes.forEach(node => {
+                    if (node.elementType) {
+                        visibleTypes.add(node.elementType);
+                    }
+                });
+
+                Array.from(visibleTypes).sort().forEach(type => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <div class="legend-color" style="background: ${this.colorScheme.elementTypes[type] || '#95a5a6'};"></div>
+                        <span>${type}</span>
+                    `;
+                    elementSection.appendChild(item);
+                });
+
+                if (visibleTypes.size > 0) {
+                    legend.appendChild(elementSection);
+                }
+
+                // Link types section
+                const linkSection = document.createElement('div');
+                linkSection.className = 'legend-section';
+                linkSection.innerHTML = '<div class="legend-title">Relationships</div>';
+
+                const linkTypes = [
+                    { type: 'hierarchy', label: 'Hierarchy', color: '#999' },
+                    { type: 'spatial', label: 'Spatial', color: '#9b59b6' },
+                    { type: 'material', label: 'Material', color: '#2ecc71' },
+                    { type: 'usage', label: 'Usage', color: '#3498db' },
+                    { type: 'connection', label: 'Connection', color: '#e74c3c' }
+                ];
+
+                linkTypes.forEach(({ type, label, color }) => {
+                    if (this.activeRelationships.has(type) || type === 'hierarchy') {
+                        const item = document.createElement('div');
+                        item.className = 'legend-item';
+                        item.innerHTML = `
+                            <div class="legend-line" style="background: ${color};"></div>
+                            <span>${label}</span>
+                        `;
+                        linkSection.appendChild(item);
+                    }
+                });
+
+                legend.appendChild(linkSection);
+            }
+
+            updateAnalysis() {
+                const analysisGrid = document.getElementById('analysisGrid');
+                analysisGrid.innerHTML = '';
+
+                // Element type distribution
+                const typeDistribution = new Map();
+                this.elementMap.forEach(elem => {
+                    const type = elem['Element_Type'];
+                    if (type) {
+                        typeDistribution.set(type, (typeDistribution.get(type) || 0) + 1);
+                    }
+                });
+
+                const typeAnalysis = document.createElement('div');
+                typeAnalysis.className = 'analysis-item';
+                typeAnalysis.innerHTML = `
+                    <div class="analysis-title">Element Distribution</div>
+                    <div class="analysis-content">
+                        ${Array.from(typeDistribution.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 5)
+                        .map(([type, count]) => `${type}: ${count}`)
+                        .join('<br>')}
+                    </div>
+                `;
+                analysisGrid.appendChild(typeAnalysis);
+
+                // Zone analysis
+                const zoneAnalysis = document.createElement('div');
+                zoneAnalysis.className = 'analysis-item';
+                zoneAnalysis.innerHTML = `
+                    <div class="analysis-title">Zone Analysis</div>
+                    <div class="analysis-content">
+                        Total Zones: ${this.zoneMap.size}<br>
+                        Largest Zone: ${Array.from(this.zoneMap.entries())
+                        .sort((a, b) => b[1].size - a[1].size)[0]?.[0] || 'N/A'}<br>
+                        Average Elements/Zone: ${Math.round(this.elementMap.size / Math.max(this.zoneMap.size, 1))}
+                    </div>
+                `;
+                analysisGrid.appendChild(zoneAnalysis);
+
+                // Material usage
+                const materialAnalysis = document.createElement('div');
+                materialAnalysis.className = 'analysis-item';
+                materialAnalysis.innerHTML = `
+                    <div class="analysis-title">Top Materials</div>
+                    <div class="analysis-content">
+                        ${Array.from(this.materialMap.entries())
+                        .sort((a, b) => b[1].size - a[1].size)
+                        .slice(0, 5)
+                        .map(([mat, elems]) => `${mat}: ${elems.size} elements`)
+                        .join('<br>')}
+                    </div>
+                `;
+                analysisGrid.appendChild(materialAnalysis);
+
+                // Relationship density
+                const relationshipAnalysis = document.createElement('div');
+                relationshipAnalysis.className = 'analysis-item';
+                const avgConnections = this.networkData.links.length / Math.max(this.networkData.nodes.length, 1);
+                relationshipAnalysis.innerHTML = `
+                    <div class="analysis-title">Network Metrics</div>
+                    <div class="analysis-content">
+                        Nodes: ${this.networkData.nodes.length}<br>
+                        Edges: ${this.networkData.links.length}<br>
+                        Avg Connections: ${avgConnections.toFixed(2)}<br>
+                        Active Relationships: ${this.activeRelationships.size}
+                    </div>
+                `;
+                analysisGrid.appendChild(relationshipAnalysis);
+            }
+
+            searchNodes(query) {
+                if (!query) {
+                    d3.selectAll('.nodes circle').style('opacity', 1);
+                    return;
+                }
+
+                const lowerQuery = query.toLowerCase();
+                d3.selectAll('.nodes circle').style('opacity', function (d) {
+                    const matches = d.label.toLowerCase().includes(lowerQuery) ||
+                        (d.type && d.type.toLowerCase().includes(lowerQuery)) ||
+                        (d.elementType && d.elementType.toLowerCase().includes(lowerQuery));
+                    return matches ? 1 : 0.2;
+                });
+            }
+
+            focusOnNode(node) {
+                const scale = 2;
+                const x = -node.x * scale + this.width / 2;
+                const y = -node.y * scale + this.height / 2;
+
+                this.svg.transition().duration(750).call(
+                    this.zoom.transform,
+                    d3.zoomIdentity.translate(x, y).scale(scale)
+                );
+            }
+
+            dragstarted(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            dragended(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            resetView() {
+                if (this.svg && this.zoom) {
+                    this.svg.transition().duration(750).call(
+                        this.zoom.transform,
+                        d3.zoomIdentity
+                    );
+                }
+            }
+
+            exportNetworkData() {
+                const exportData = {
+                    metadata: {
+                        source: this.currentMode === 'sample' ? 'Sample Data' : 'User Upload',
+                        totalElements: this.elementMap.size,
+                        exportDate: new Date().toISOString(),
+                        viewMode: document.getElementById('viewMode').value
+                    },
+                    statistics: {
+                        elementTypes: Object.fromEntries(
+                            Array.from(this.elementMap.values())
+                                .reduce((acc, elem) => {
+                                    const type = elem['Element_Type'];
+                                    if (type) acc.set(type, (acc.get(type) || 0) + 1);
+                                    return acc;
+                                }, new Map())
+                        ),
+                        zones: this.zoneMap.size,
+                        materials: this.materialMap.size,
+                        profiles: this.profileMap.size
+                    },
+                    network: {
+                        nodes: this.networkData.nodes.map(n => ({
+                            id: n.id,
+                            label: n.label,
+                            type: n.type,
+                            level: n.level,
+                            count: n.count,
+                            elementType: n.elementType
+                        })),
+                        links: this.networkData.links.map(l => ({
+                            source: l.source.id || l.source,
+                            target: l.target.id || l.target,
+                            type: l.type
+                        }))
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `archicad_network_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            showProcessing(show) {
+                document.getElementById('processing').style.display = show ? 'block' : 'none';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+        }
+
+        // Initialize analyzer
+        let csvAnalyzer;
+
+        // Global functions for mode switching
+        function setMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (mode === 'sample') {
+                document.getElementById('sampleNotice').style.display = 'block';
+                document.getElementById('uploadSection').style.display = 'none';
+                if (!csvAnalyzer) {
+                    csvAnalyzer = new ArchicadCSVAnalyzer();
+                } else {
+                    csvAnalyzer.currentMode = 'sample';
+                    csvAnalyzer.loadSampleData();
+                }
+            } else {
+                document.getElementById('sampleNotice').style.display = 'none';
+                document.getElementById('uploadSection').style.display = 'block';
+                if (csvAnalyzer) {
+                    csvAnalyzer.currentMode = 'upload';
+                }
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            csvAnalyzer = new ArchicadCSVAnalyzer();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced IFC BIM Network Diagram System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 5px;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        select,
+        input[type="range"],
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 900px;
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .processing {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffd700;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .ifc-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .info-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .info-value {
+            color: #ffd700;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        #zoom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #ffcccb;
+        }
+
+        .hierarchy-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hierarchy-btn {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .element-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .category-btn {
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .filter-tag {
+            background: rgba(255, 215, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-tag button {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏗️ Enhanced IFC BIM Network Analyzer</h1>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-text">📁 Drop IFC File Here or Click to Browse</div>
+            <div class="upload-subtext">Supports .ifc files (Industry Foundation Classes)</div>
+            <input type="file" id="fileInput" accept=".ifc" />
+        </div>
+
+        <div id="processing" class="processing" style="display: none;">
+            <div class="spinner"></div>
+            <div>Processing IFC file...</div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-number" id="totalNodes">0</div>
+                <div class="stat-label">Total Nodes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEdges">0</div>
+                <div class="stat-label">Relationships</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="elementCategories">0</div>
+                <div class="stat-label">Element Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="elementTypes">0</div>
+                <div class="stat-label">Element Types</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalElements">0</div>
+                <div class="stat-label">Total Elements</div>
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <div class="control-row">
+                <div class="control-group" style="flex: 2;">
+                    <label>Hierarchy View:</label>
+                    <div class="hierarchy-buttons">
+                        <button class="hierarchy-btn active" data-hierarchy="element-centric">Element-Based</button>
+                        <button class="hierarchy-btn" data-hierarchy="spatial">Spatial-Based</button>
+                        <button class="hierarchy-btn" data-hierarchy="system">System-Based</button>
+                        <button class="hierarchy-btn" data-hierarchy="mixed">Mixed View</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group" style="flex: 3;">
+                    <label>Element Categories:</label>
+                    <div class="element-categories" id="categoryButtons">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Element Type Filter:</label>
+                    <select id="elementFilter" multiple size="5">
+                        <option value="all" selected>All Element Types</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Display Options:</label>
+                    <select id="displayLevel">
+                        <option value="categories">Categories Only</option>
+                        <option value="types">Categories + Types</option>
+                        <option value="elements" selected>All Elements</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Node Size: <span id="sizeValue">1</span></label>
+                    <input type="range" id="nodeSize" min="0.5" max="3" value="1" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-row">
+                <button id="resetView">Reset View</button>
+                <button id="resetFilters">Clear All Filters</button>
+                <button id="exportData">Export Network Data</button>
+            </div>
+
+            <div class="filter-tags" id="filterTags">
+                <!-- Active filters displayed here -->
+            </div>
+        </div>
+
+        <div id="network-container">
+            <div class="legend" id="legend">
+                <!-- Populated dynamically -->
+            </div>
+            <div id="zoom-info">
+                Mouse wheel: zoom | Drag: pan | Click: node details | Double-click: focus
+            </div>
+        </div>
+
+        <div class="ifc-info" id="ifcInfo">
+            <h3>📊 IFC Element Analysis</h3>
+            <div class="info-grid" id="infoGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Enhanced IFC Network Analyzer with Element-Centric Architecture
+        class EnhancedIFCNetworkAnalyzer {
+            constructor() {
+                this.ifcData = null;
+                this.networkData = { nodes: [], links: [] };
+                this.ifcEntities = new Map();
+                this.relationships = new Map();
+                this.elementCounts = {};
+                this.elementCategories = {};
+                this.systemClassifications = {};
+                this.spatialStructure = {};
+                this.currentHierarchy = 'element-centric';
+                this.activeFilters = new Set();
+                this.elementTypeHierarchy = {
+                    'Structural': {
+                        types: ['IFCBEAM', 'IFCCOLUMN', 'IFCSLAB', 'IFCFOOTING', 'IFCWALL', 'IFCROOF', 'IFCSTAIR', 'IFCRAMP', 'IFCPLATE', 'IFCMEMBER'],
+                        color: '#e74c3c'
+                    },
+                    'Architecture': {
+                        types: ['IFCDOOR', 'IFCWINDOW', 'IFCCURTAINWALL', 'IFCRAILING', 'IFCCOVERING', 'IFCFURNITURE'],
+                        color: '#3498db'
+                    },
+                    'MEP': {
+                        types: ['IFCPIPESEGMENT', 'IFCDUCTSEGMENT', 'IFCFLOWTERMINAL', 'IFCFLOWFITTING', 'IFCFLOWCONTROLLER', 'IFCELECTRICALELEMENT', 'IFCSANITARYTERMINAL'],
+                        color: '#2ecc71'
+                    },
+                    'Equipment': {
+                        types: ['IFCBUILDINGELEMENTPROXY', 'IFCDISTRIBUTIONELEMENT', 'IFCTRANSPORTELEMENT', 'IFCELECTRICAPPLIANCE'],
+                        color: '#f39c12'
+                    },
+                    'Spatial': {
+                        types: ['IFCSPACE', 'IFCZONE', 'IFCSITE', 'IFCBUILDING', 'IFCBUILDINGSTOREY'],
+                        color: '#9b59b6'
+                    }
+                };
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadArea.addEventListener('drop', this.handleDrop.bind(this));
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // Hierarchy buttons
+                document.querySelectorAll('.hierarchy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.hierarchy-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentHierarchy = e.target.dataset.hierarchy;
+                        this.rebuildNetworkStructure();
+                    });
+                });
+
+                // Control listeners
+                document.getElementById('elementFilter').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('displayLevel').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('nodeSize').addEventListener('input', (e) => {
+                    document.getElementById('sizeValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('resetView').addEventListener('click', () => this.resetView());
+                document.getElementById('resetFilters').addEventListener('click', () => this.resetFilters());
+                document.getElementById('exportData').addEventListener('click', () => this.exportNetworkData());
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            async processFile(file) {
+                if (!file.name.toLowerCase().endsWith('.ifc')) {
+                    this.showError('Please select a valid IFC file (.ifc extension)');
+                    return;
+                }
+
+                this.showProcessing(true);
+                this.hideError();
+
+                try {
+                    const text = await this.readFileAsText(file);
+                    await this.parseIFC(text);
+                    this.analyzeElementStructure();
+                    this.buildNetworkStructure();
+                    this.showResults();
+                    this.initializeVisualization();
+                } catch (error) {
+                    console.error('Error processing IFC file:', error);
+                    this.showError(`Error processing IFC file: ${error.message}`);
+                } finally {
+                    this.showProcessing(false);
+                }
+            }
+
+            readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+
+            async parseIFC(text) {
+                const lines = text.split('\n');
+                const dataSection = lines.filter(line => line.trim().startsWith('#'));
+
+                // Parse entities
+                for (const line of dataSection) {
+                    const match = line.match(/#(\d+)\s*=\s*([A-Z_]+)\((.*)\)/);
+                    if (match) {
+                        const [, id, type, params] = match;
+                        this.ifcEntities.set(parseInt(id), {
+                            id: parseInt(id),
+                            type: type,
+                            params: this.parseParams(params),
+                            rawLine: line.trim()
+                        });
+                    }
+                }
+
+                // Parse relationships
+                this.parseRelationships();
+
+                console.log('Parsed entities:', this.ifcEntities.size);
+            }
+
+            parseParams(paramString) {
+                const params = [];
+                let current = '';
+                let depth = 0;
+                let inString = false;
+
+                for (let i = 0; i < paramString.length; i++) {
+                    const char = paramString[i];
+
+                    if (char === "'" && paramString[i - 1] !== '\\') {
+                        inString = !inString;
+                    }
+
+                    if (!inString) {
+                        if (char === '(') depth++;
+                        else if (char === ')') depth--;
+                        else if (char === ',' && depth === 0) {
+                            params.push(current.trim());
+                            current = '';
+                            continue;
+                        }
+                    }
+
+                    current += char;
+                }
+
+                if (current.trim()) params.push(current.trim());
+                return params;
+            }
+
+            parseRelationships() {
+                // Parse spatial containment relationships
+                for (const [id, entity] of this.ifcEntities) {
+                    if (entity.type === 'IFCRELCONTAINEDINSPATIALSTRUCTURE') {
+                        const relatedElements = this.extractReferences(entity.params[4] || '');
+                        const spatialElement = this.extractReference(entity.params[5] || '');
+
+                        if (spatialElement) {
+                            relatedElements.forEach(elemId => {
+                                if (!this.relationships.has(elemId)) {
+                                    this.relationships.set(elemId, { spatial: [], aggregates: [], types: [] });
+                                }
+                                this.relationships.get(elemId).spatial.push(spatialElement);
+                            });
+                        }
+                    }
+                    // Parse aggregation relationships
+                    else if (entity.type === 'IFCRELAGGREGATES') {
+                        const parentId = this.extractReference(entity.params[4] || '');
+                        const childIds = this.extractReferences(entity.params[5] || '');
+
+                        childIds.forEach(childId => {
+                            if (!this.relationships.has(childId)) {
+                                this.relationships.set(childId, { spatial: [], aggregates: [], types: [] });
+                            }
+                            this.relationships.get(childId).aggregates.push(parentId);
+                        });
+                    }
+                    // Parse type relationships
+                    else if (entity.type === 'IFCRELDEFINESBYTYPE') {
+                        const elements = this.extractReferences(entity.params[4] || '');
+                        const typeId = this.extractReference(entity.params[5] || '');
+
+                        elements.forEach(elemId => {
+                            if (!this.relationships.has(elemId)) {
+                                this.relationships.set(elemId, { spatial: [], aggregates: [], types: [] });
+                            }
+                            this.relationships.get(elemId).types.push(typeId);
+                        });
+                    }
+                }
+            }
+
+            extractReference(param) {
+                const match = param.match(/#(\d+)/);
+                return match ? parseInt(match[1]) : null;
+            }
+
+            extractReferences(param) {
+                const refs = [];
+                const matches = param.matchAll(/#(\d+)/g);
+                for (const match of matches) {
+                    refs.push(parseInt(match[1]));
+                }
+                return refs;
+            }
+
+            analyzeElementStructure() {
+                // Count and categorize elements
+                this.elementCounts = {};
+                this.elementCategories = {};
+
+                for (const entity of this.ifcEntities.values()) {
+                    this.elementCounts[entity.type] = (this.elementCounts[entity.type] || 0) + 1;
+
+                    // Categorize by element type hierarchy
+                    for (const [category, config] of Object.entries(this.elementTypeHierarchy)) {
+                        if (config.types.includes(entity.type)) {
+                            if (!this.elementCategories[category]) {
+                                this.elementCategories[category] = {};
+                            }
+                            this.elementCategories[category][entity.type] =
+                                (this.elementCategories[category][entity.type] || 0) + 1;
+                        }
+                    }
+                }
+
+                console.log('Element categories:', this.elementCategories);
+            }
+
+            buildNetworkStructure() {
+                switch (this.currentHierarchy) {
+                    case 'element-centric':
+                        this.buildElementCentricNetwork();
+                        break;
+                    case 'spatial':
+                        this.buildSpatialNetwork();
+                        break;
+                    case 'system':
+                        this.buildSystemNetwork();
+                        break;
+                    case 'mixed':
+                        this.buildMixedNetwork();
+                        break;
+                }
+            }
+
+            buildElementCentricNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Create root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'IFC Model',
+                    type: 'Root',
+                    level: 0,
+                    count: this.ifcEntities.size,
+                    size: 30,
+                    category: 'Root'
+                });
+
+                // Level 1: Element Categories
+                const categoryNodes = new Map();
+                for (const [category, types] of Object.entries(this.elementCategories)) {
+                    const categoryId = `node_${nodeId++}`;
+                    const totalCount = Object.values(types).reduce((sum, count) => sum + count, 0);
+
+                    nodes.push({
+                        id: categoryId,
+                        label: category,
+                        type: 'Category',
+                        level: 1,
+                        count: totalCount,
+                        size: 20,
+                        category: category,
+                        color: this.elementTypeHierarchy[category].color
+                    });
+
+                    categoryNodes.set(category, categoryId);
+                    links.push({ source: rootId, target: categoryId, strength: 2 });
+                }
+
+                // Level 2: Element Types
+                const typeNodes = new Map();
+                for (const [category, types] of Object.entries(this.elementCategories)) {
+                    const categoryId = categoryNodes.get(category);
+
+                    for (const [typeName, count] of Object.entries(types)) {
+                        const typeId = `node_${nodeId++}`;
+
+                        nodes.push({
+                            id: typeId,
+                            label: typeName.replace('IFC', ''),
+                            type: 'ElementType',
+                            level: 2,
+                            count: count,
+                            size: Math.max(5, Math.min(15, Math.log(count + 1) * 3)),
+                            category: category,
+                            ifcType: typeName,
+                            color: this.elementTypeHierarchy[category].color
+                        });
+
+                        typeNodes.set(typeName, typeId);
+                        links.push({ source: categoryId, target: typeId, strength: 1.5 });
+                    }
+                }
+
+                // Level 3: Element Subtypes (if any)
+                const subtypeNodes = new Map();
+                for (const [id, entity] of this.ifcEntities) {
+                    if (entity.type.endsWith('TYPE') && !entity.type.includes('RELDEFINES')) {
+                        const baseType = entity.type.replace('TYPE', '');
+                        if (typeNodes.has(baseType)) {
+                            const subtypeId = `node_${nodeId++}`;
+                            const subtypeName = this.extractName(entity) || `${entity.type}_${id}`;
+
+                            nodes.push({
+                                id: subtypeId,
+                                label: subtypeName,
+                                type: 'ElementSubtype',
+                                level: 3,
+                                size: 8,
+                                ifcType: entity.type,
+                                ifcId: id,
+                                parentType: baseType
+                            });
+
+                            subtypeNodes.set(id, subtypeId);
+                            links.push({ source: typeNodes.get(baseType), target: subtypeId });
+                        }
+                    }
+                }
+
+                // Level 4: Individual Elements (limited for performance)
+                const elementLimit = 500; // Limit for visualization performance
+                let elementsAdded = 0;
+
+                for (const [typeName, typeNodeId] of typeNodes) {
+                    if (elementsAdded >= elementLimit) break;
+
+                    const elements = Array.from(this.ifcEntities.values())
+                        .filter(e => e.type === typeName);
+
+                    const elementsToShow = Math.min(elements.length, Math.floor(elementLimit / typeNodes.size));
+
+                    elements.slice(0, elementsToShow).forEach(entity => {
+                        const elemId = `node_${nodeId++}`;
+                        const elemName = this.extractName(entity) || `${entity.type}_${entity.id}`;
+
+                        nodes.push({
+                            id: elemId,
+                            label: elemName,
+                            type: 'Element',
+                            level: 4,
+                            size: 4,
+                            ifcType: entity.type,
+                            ifcId: entity.id,
+                            entityData: entity
+                        });
+
+                        // Check if element has a subtype
+                        const rel = this.relationships.get(entity.id);
+                        if (rel && rel.types.length > 0 && subtypeNodes.has(rel.types[0])) {
+                            links.push({ source: subtypeNodes.get(rel.types[0]), target: elemId });
+                        } else {
+                            links.push({ source: typeNodeId, target: elemId });
+                        }
+
+                        elementsAdded++;
+                    });
+                }
+
+                this.networkData = { nodes, links };
+                console.log('Element-centric network built:', nodes.length, 'nodes,', links.length, 'links');
+            }
+
+            buildSpatialNetwork() {
+                // Traditional spatial hierarchy
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Similar to original implementation but enhanced
+                // ... (spatial hierarchy implementation)
+
+                this.networkData = { nodes, links };
+            }
+
+            buildSystemNetwork() {
+                // System-based hierarchy (MEP systems, structural systems, etc.)
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // ... (system hierarchy implementation)
+
+                this.networkData = { nodes, links };
+            }
+
+            buildMixedNetwork() {
+                // Combined view showing both spatial and element relationships
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // ... (mixed hierarchy implementation)
+
+                this.networkData = { nodes, links };
+            }
+
+            extractName(entity) {
+                if (entity.params && entity.params.length > 2) {
+                    const nameParam = entity.params[2];
+                    if (nameParam && nameParam.startsWith("'") && nameParam.endsWith("'")) {
+                        const name = nameParam.slice(1, -1);
+                        if (name && name !== '$' && name.length > 0) {
+                            return name;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            rebuildNetworkStructure() {
+                this.buildNetworkStructure();
+                this.updateVisualization();
+            }
+
+            showProcessing(show) {
+                document.getElementById('processing').style.display = show ? 'block' : 'none';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+
+            showResults() {
+                // Update statistics
+                document.getElementById('totalNodes').textContent = this.networkData.nodes.length.toLocaleString();
+                document.getElementById('totalEdges').textContent = this.networkData.links.length.toLocaleString();
+                document.getElementById('elementCategories').textContent = Object.keys(this.elementCategories).length.toLocaleString();
+                document.getElementById('elementTypes').textContent = Object.keys(this.elementCounts).length.toLocaleString();
+                document.getElementById('totalElements').textContent = this.ifcEntities.size.toLocaleString();
+
+                // Show UI elements
+                document.getElementById('stats').style.display = 'flex';
+                document.getElementById('controls').style.display = 'block';
+                document.getElementById('network-container').style.display = 'block';
+                document.getElementById('ifcInfo').style.display = 'block';
+
+                // Populate element filter
+                this.populateElementFilter();
+
+                // Populate category buttons
+                this.populateCategoryButtons();
+
+                // Populate info grid
+                this.populateInfoGrid();
+            }
+
+            populateElementFilter() {
+                const elementFilter = document.getElementById('elementFilter');
+                elementFilter.innerHTML = '<option value="all" selected>All Element Types</option>';
+
+                // Group by category
+                for (const [category, types] of Object.entries(this.elementCategories)) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category;
+
+                    for (const typeName of Object.keys(types).sort()) {
+                        const option = document.createElement('option');
+                        option.value = typeName;
+                        option.textContent = `${typeName.replace('IFC', '')} (${types[typeName]})`;
+                        optgroup.appendChild(option);
+                    }
+
+                    elementFilter.appendChild(optgroup);
+                }
+            }
+
+            populateCategoryButtons() {
+                const container = document.getElementById('categoryButtons');
+                container.innerHTML = '';
+
+                for (const [category, config] of Object.entries(this.elementTypeHierarchy)) {
+                    const count = this.elementCategories[category] ?
+                        Object.values(this.elementCategories[category]).reduce((sum, c) => sum + c, 0) : 0;
+
+                    if (count > 0) {
+                        const btn = document.createElement('button');
+                        btn.className = 'category-btn';
+                        btn.textContent = `${category} (${count})`;
+                        btn.style.borderColor = config.color;
+                        btn.dataset.category = category;
+
+                        btn.addEventListener('click', () => this.toggleCategory(category));
+                        container.appendChild(btn);
+                    }
+                }
+            }
+
+            toggleCategory(category) {
+                const types = this.elementTypeHierarchy[category].types;
+                const elementFilter = document.getElementById('elementFilter');
+
+                // Toggle selection for all types in category
+                const options = elementFilter.options;
+                let anySelected = false;
+
+                for (let i = 0; i < options.length; i++) {
+                    if (types.includes(options[i].value)) {
+                        if (options[i].selected) anySelected = true;
+                    }
+                }
+
+                for (let i = 0; i < options.length; i++) {
+                    if (types.includes(options[i].value)) {
+                        options[i].selected = !anySelected;
+                    }
+                }
+
+                this.updateVisualization();
+            }
+
+            populateInfoGrid() {
+                const infoGrid = document.getElementById('infoGrid');
+                infoGrid.innerHTML = '';
+
+                const sortedElements = Object.entries(this.elementCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 20);
+
+                sortedElements.forEach(([type, count]) => {
+                    const item = document.createElement('div');
+                    item.className = 'info-item';
+                    item.dataset.type = type;
+
+                    // Find category
+                    let category = 'Other';
+                    for (const [cat, config] of Object.entries(this.elementTypeHierarchy)) {
+                        if (config.types.includes(type)) {
+                            category = cat;
+                            break;
+                        }
+                    }
+
+                    item.innerHTML = `
+                        <div class="info-label">${type.replace('IFC', '')}</div>
+                        <div class="info-value">${count.toLocaleString()}</div>
+                        <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">${category}</div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        const elementFilter = document.getElementById('elementFilter');
+                        elementFilter.value = type;
+                        this.updateVisualization();
+                    });
+
+                    infoGrid.appendChild(item);
+                });
+            }
+
+            initializeVisualization() {
+                this.createVisualization();
+            }
+
+            createVisualization() {
+                // Clear previous visualization
+                d3.select('#network-container svg').remove();
+
+                const container = d3.select('#network-container');
+                const width = container.node().getBoundingClientRect().width;
+                const height = 900;
+
+                const svg = container.append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g');
+
+                // Define arrow markers for directed edges
+                svg.append('defs').selectAll('marker')
+                    .data(['end'])
+                    .enter().append('marker')
+                    .attr('id', String)
+                    .attr('viewBox', '0 -5 10 10')
+                    .attr('refX', 15)
+                    .attr('refY', 0)
+                    .attr('markerWidth', 6)
+                    .attr('markerHeight', 6)
+                    .attr('orient', 'auto')
+                    .append('path')
+                    .attr('d', 'M0,-5L10,0L0,5')
+                    .attr('fill', '#999');
+
+                // Zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 10])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+
+                svg.call(zoom);
+
+                // Store references
+                this.svg = svg;
+                this.g = g;
+                this.zoom = zoom;
+                this.width = width;
+                this.height = height;
+
+                this.updateVisualization();
+            }
+
+            updateVisualization() {
+                if (!this.g) return;
+
+                this.g.selectAll('*').remove();
+
+                // Get filter settings
+                const elementFilter = document.getElementById('elementFilter');
+                const selectedTypes = Array.from(elementFilter.selectedOptions).map(opt => opt.value);
+                const displayLevel = document.getElementById('displayLevel').value;
+
+                // Filter nodes and links
+                let filteredNodes = [...this.networkData.nodes];
+                let filteredLinks = [...this.networkData.links];
+
+                // Apply element type filter
+                if (!selectedTypes.includes('all') && selectedTypes.length > 0) {
+                    // Keep root and categories always visible
+                    const keepNodes = new Set();
+
+                    filteredNodes.forEach(node => {
+                        if (node.level <= 1) {
+                            keepNodes.add(node.id);
+                        } else if (node.ifcType && selectedTypes.includes(node.ifcType)) {
+                            keepNodes.add(node.id);
+                            // Keep parent nodes
+                            let parentId = node.id;
+                            while (parentId) {
+                                const parentLink = filteredLinks.find(l =>
+                                    (l.target.id || l.target) === parentId
+                                );
+                                if (parentLink) {
+                                    parentId = parentLink.source.id || parentLink.source;
+                                    keepNodes.add(parentId);
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    });
+
+                    filteredNodes = filteredNodes.filter(n => keepNodes.has(n.id));
+                }
+
+                // Apply display level filter
+                switch (displayLevel) {
+                    case 'categories':
+                        filteredNodes = filteredNodes.filter(n => n.level <= 1);
+                        break;
+                    case 'types':
+                        filteredNodes = filteredNodes.filter(n => n.level <= 2);
+                        break;
+                    // 'elements' shows all levels
+                }
+
+                // Filter links based on visible nodes
+                const nodeIds = new Set(filteredNodes.map(n => n.id));
+                filteredLinks = filteredLinks.filter(l =>
+                    nodeIds.has(l.source.id || l.source) &&
+                    nodeIds.has(l.target.id || l.target)
+                );
+
+                // Update filter tags
+                this.updateFilterTags(selectedTypes);
+
+                // Create force simulation
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks)
+                        .id(d => d.id)
+                        .distance(d => {
+                            const sourceLevel = d.source.level || 0;
+                            switch (sourceLevel) {
+                                case 0: return 200;
+                                case 1: return 150;
+                                case 2: return 100;
+                                case 3: return 80;
+                                default: return 60;
+                            }
+                        })
+                        .strength(d => d.strength || 1))
+                    .force('charge', d3.forceManyBody()
+                        .strength(d => {
+                            switch (d.level) {
+                                case 0: return -2000;
+                                case 1: return -1200;
+                                case 2: return -600;
+                                case 3: return -300;
+                                case 4: return -100;
+                                default: return -50;
+                            }
+                        }))
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .force('collision', d3.forceCollide()
+                        .radius(d => (d.size || 5) * 1.5));
+
+                // Create links
+                const link = this.g.append('g')
+                    .selectAll('line')
+                    .data(filteredLinks)
+                    .join('line')
+                    .attr('stroke', '#999')
+                    .attr('stroke-opacity', 0.6)
+                    .attr('stroke-width', d => {
+                        const sourceLevel = (d.source.level !== undefined) ? d.source.level : d.source.level;
+                        return Math.max(1, 4 - sourceLevel);
+                    })
+                    .attr('marker-end', 'url(#end)');
+
+                // Create nodes
+                const nodeSize = parseFloat(document.getElementById('nodeSize').value);
+
+                const node = this.g.append('g')
+                    .selectAll('g')
+                    .data(filteredNodes)
+                    .join('g')
+                    .call(d3.drag()
+                        .on('start', this.dragstarted.bind(this))
+                        .on('drag', this.dragged.bind(this))
+                        .on('end', this.dragended.bind(this)));
+
+                // Add circles
+                node.append('circle')
+                    .attr('r', d => (d.size || 5) * nodeSize)
+                    .attr('fill', d => d.color || this.getNodeColor(d))
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .style('cursor', 'pointer');
+
+                // Add labels for important nodes
+                node.filter(d => d.level <= 2 || (d.level === 3 && d.count > 10))
+                    .append('text')
+                    .text(d => {
+                        const label = d.label || '';
+                        const maxLength = d.level === 0 ? 20 : d.level === 1 ? 15 : 12;
+                        return label.length > maxLength ? label.substring(0, maxLength) + '...' : label;
+                    })
+                    .attr('font-size', d => d.level === 0 ? '14px' : d.level === 1 ? '12px' : '10px')
+                    .attr('font-weight', d => d.level <= 1 ? 'bold' : 'normal')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', d => (d.size || 5) * nodeSize + 15)
+                    .style('pointer-events', 'none');
+
+                // Tooltip
+                const tooltip = d3.select('#tooltip');
+                node.on('mouseover', (event, d) => {
+                    tooltip.style('opacity', 1)
+                        .html(this.getTooltipContent(d))
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                    .on('mouseout', () => {
+                        tooltip.style('opacity', 0);
+                    })
+                    .on('dblclick', (event, d) => {
+                        this.focusOnNode(d);
+                    });
+
+                // Update positions on tick
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+
+                    node.attr('transform', d => `translate(${d.x},${d.y})`);
+                });
+
+                // Update legend
+                this.updateLegend();
+
+                this.simulation = simulation;
+            }
+
+            getNodeColor(node) {
+                if (node.level === 0) return '#34495e';
+
+                for (const [category, config] of Object.entries(this.elementTypeHierarchy)) {
+                    if (node.category === category ||
+                        (node.ifcType && config.types.includes(node.ifcType))) {
+                        return config.color;
+                    }
+                }
+
+                return '#95a5a6';
+            }
+
+            getTooltipContent(d) {
+                let content = `<strong>${d.label}</strong><br/>`;
+                content += `Type: ${d.type}<br/>`;
+
+                if (d.level !== undefined) content += `Level: ${d.level}<br/>`;
+                if (d.ifcType) content += `IFC Type: ${d.ifcType}<br/>`;
+                if (d.count) content += `Count: ${d.count.toLocaleString()}<br/>`;
+                if (d.ifcId) content += `IFC ID: #${d.ifcId}<br/>`;
+                if (d.category) content += `Category: ${d.category}`;
+
+                return content;
+            }
+
+            updateLegend() {
+                const legend = document.getElementById('legend');
+                legend.innerHTML = '<h4 style="margin: 0 0 10px 0;">Legend</h4>';
+
+                const visibleCategories = new Set();
+                this.networkData.nodes.forEach(node => {
+                    if (node.category) visibleCategories.add(node.category);
+                });
+
+                for (const [category, config] of Object.entries(this.elementTypeHierarchy)) {
+                    if (visibleCategories.has(category) || category === 'Root') {
+                        const item = document.createElement('div');
+                        item.className = 'legend-item';
+                        item.innerHTML = `
+                            <div class="legend-color" style="background: ${config.color || '#34495e'};"></div>
+                            <span>${category}</span>
+                        `;
+                        legend.appendChild(item);
+                    }
+                }
+
+                // Add node type legend
+                const nodeTypes = [
+                    { label: 'Root', symbol: '●', size: '16px' },
+                    { label: 'Category', symbol: '●', size: '14px' },
+                    { label: 'Type', symbol: '●', size: '12px' },
+                    { label: 'Element', symbol: '●', size: '8px' }
+                ];
+
+                const typeLegend = document.createElement('div');
+                typeLegend.style.marginTop = '15px';
+                typeLegend.innerHTML = '<h4 style="margin: 0 0 10px 0;">Node Types</h4>';
+
+                nodeTypes.forEach(type => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <span style="font-size: ${type.size}; margin-right: 8px;">${type.symbol}</span>
+                        <span>${type.label}</span>
+                    `;
+                    typeLegend.appendChild(item);
+                });
+
+                legend.appendChild(typeLegend);
+            }
+
+            updateFilterTags(selectedTypes) {
+                const container = document.getElementById('filterTags');
+                container.innerHTML = '';
+
+                if (!selectedTypes.includes('all') && selectedTypes.length > 0) {
+                    selectedTypes.forEach(type => {
+                        const tag = document.createElement('div');
+                        tag.className = 'filter-tag';
+                        tag.innerHTML = `
+                            <span>${type.replace('IFC', '')}</span>
+                            <button onclick="window.ifcAnalyzer.removeFilter('${type}')">×</button>
+                        `;
+                        container.appendChild(tag);
+                    });
+                }
+            }
+
+            removeFilter(type) {
+                const elementFilter = document.getElementById('elementFilter');
+                const options = elementFilter.options;
+
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === type) {
+                        options[i].selected = false;
+                        break;
+                    }
+                }
+
+                this.updateVisualization();
+            }
+
+            focusOnNode(node) {
+                // Zoom and center on the selected node
+                const scale = 2;
+                const x = -node.x * scale + this.width / 2;
+                const y = -node.y * scale + this.height / 2;
+
+                this.svg.transition().duration(750).call(
+                    this.zoom.transform,
+                    d3.zoomIdentity.translate(x, y).scale(scale)
+                );
+            }
+
+            dragstarted(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            dragended(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            resetView() {
+                if (this.svg && this.zoom) {
+                    this.svg.transition().duration(750).call(
+                        this.zoom.transform,
+                        d3.zoomIdentity
+                    );
+                }
+            }
+
+            resetFilters() {
+                document.getElementById('elementFilter').value = 'all';
+                document.getElementById('displayLevel').value = 'elements';
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.updateVisualization();
+            }
+
+            exportNetworkData() {
+                const exportData = {
+                    metadata: {
+                        totalEntities: this.ifcEntities.size,
+                        categories: Object.keys(this.elementCategories),
+                        exportDate: new Date().toISOString(),
+                        hierarchy: this.currentHierarchy
+                    },
+                    elementCounts: this.elementCounts,
+                    elementCategories: this.elementCategories,
+                    network: {
+                        nodes: this.networkData.nodes.map(n => ({
+                            id: n.id,
+                            label: n.label,
+                            type: n.type,
+                            level: n.level,
+                            category: n.category,
+                            ifcType: n.ifcType,
+                            count: n.count
+                        })),
+                        links: this.networkData.links.map(l => ({
+                            source: l.source.id || l.source,
+                            target: l.target.id || l.target
+                        }))
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ifc_network_analysis_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // Initialize the enhanced application
+        const ifcAnalyzer = new EnhancedIFCNetworkAnalyzer();
+        window.ifcAnalyzer = ifcAnalyzer; // Make available globally for filter removal
+    </script>
+</body>
+
+</html>

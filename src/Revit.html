@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revit CSV BIM Network Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .mode-selector {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .upload-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 5px;
+            min-width: 140px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        select,
+        input[type="range"],
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        select option {
+            background: #333;
+            color: white;
+        }
+
+        .relationship-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 15px;
+            font-size: 0.85em;
+            border-radius: 20px;
+        }
+
+        .toggle-btn.active {
+            background: rgba(255, 215, 0, 0.4);
+            border-color: #ffd700;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 800px;
+            background: rgb(255, 255, 255);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 12px;
+            max-width: 350px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip-row {
+            margin: 2px 0;
+        }
+
+        .tooltip-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .tooltip-value {
+            color: #ffd700;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-height: 400px;
+            overflow-y: auto;
+            max-width: 250px;
+        }
+
+        .legend-section {
+            margin-bottom: 15px;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 11px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .processing {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffd700;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .element-analysis {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .analysis-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        .analysis-content {
+            font-size: 0.9em;
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #ffcccb;
+            display: none;
+        }
+
+        #zoom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .sample-notice {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .node-search {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .search-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: white;
+            width: 200px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .hierarchy-info {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .hierarchy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .hierarchy-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hierarchy-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hierarchy-label {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+
+        .hierarchy-value {
+            color: #ffd700;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🏢 Revit CSV BIM Network Analyzer</h1>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('sample')">View Sample Data</button>
+            <button class="mode-btn" onclick="setMode('upload')">Upload Your CSV</button>
+        </div>
+
+        <div class="sample-notice" id="sampleNotice">
+            <strong>Sample Data Loaded:</strong> Revit M3 Building with 4,412 elements and 1,020 properties
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-text">📁 Drop CSV File Here or Click to Browse</div>
+                <div class="upload-subtext">Supports Revit-exported CSV files with BIM metadata</div>
+                <input type="file" id="fileInput" accept=".csv" />
+            </div>
+        </div>
+
+        <div id="processing" class="processing" style="display: none;">
+            <div class="spinner"></div>
+            <div>Processing CSV data...</div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalElements">0</div>
+                <div class="stat-label">Total Elements</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="categories">0</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="families">0</div>
+                <div class="stat-label">Families</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="levels">0</div>
+                <div class="stat-label">Levels</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="systems">0</div>
+                <div class="stat-label">Systems</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeRelationships">0</div>
+                <div class="stat-label">Relationships</div>
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <div class="control-row">
+                <div class="control-group" style="flex: 2;">
+                    <label>Network View:</label>
+                    <select id="viewMode">
+                        <option value="category-hierarchy">Category Hierarchy</option>
+                        <option value="family-structure">Family Structure</option>
+                        <option value="level-spatial">Level/Spatial View</option>
+                        <option value="system-network">System Network</option>
+                        <option value="host-relationships">Host Relationships</option>
+                        <option value="phase-timeline">Phase Timeline</option>
+                        <option value="combined">Combined View</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Category Filter:</label>
+                    <select id="categoryFilter" multiple size="5">
+                        <option value="all" selected>All Categories</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group" style="flex: 3;">
+                    <label>Show Relationships:</label>
+                    <div class="relationship-toggles">
+                        <button class="toggle-btn active" data-rel="hierarchy">Hierarchy</button>
+                        <button class="toggle-btn active" data-rel="family">Family</button>
+                        <button class="toggle-btn" data-rel="spatial">Spatial</button>
+                        <button class="toggle-btn" data-rel="host">Host</button>
+                        <button class="toggle-btn" data-rel="system">System</button>
+                        <button class="toggle-btn" data-rel="phase">Phase</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Node Size: <span id="sizeValue">1</span></label>
+                    <input type="range" id="nodeSize" min="0.5" max="3" value="1" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Link Strength: <span id="strengthValue">1</span></label>
+                    <input type="range" id="linkStrength" min="0.1" max="3" value="1" step="0.1">
+                </div>
+                <div class="control-group">
+                    <button id="resetView">Reset View</button>
+                    <button id="exportData">Export Network</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="network-container">
+            <div class="node-search">
+                <input type="text" class="search-input" id="nodeSearch" placeholder="Search elements...">
+            </div>
+            <div class="legend" id="legend">
+                <!-- Populated dynamically -->
+            </div>
+            <div id="zoom-info">
+                Mouse wheel: zoom | Drag: pan | Click: details | Double-click: focus
+            </div>
+        </div>
+
+        <div class="hierarchy-info">
+            <h3>📊 Top Categories</h3>
+            <div class="hierarchy-grid" id="categoryGrid">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <div class="element-analysis" id="elementAnalysis">
+            <h3>📊 Data Analysis</h3>
+            <div class="analysis-grid" id="analysisGrid">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Revit CSV BIM Network Analyzer
+        class RevitCSVAnalyzer {
+            constructor() {
+                this.csvData = null;
+                this.networkData = { nodes: [], links: [] };
+                this.elementMap = new Map();
+                this.categoryMap = new Map();
+                this.familyMap = new Map();
+                this.levelMap = new Map();
+                this.systemMap = new Map();
+                this.hostMap = new Map();
+                this.phaseMap = new Map();
+                this.currentMode = 'sample';
+                this.activeRelationships = new Set(['hierarchy', 'family']);
+                this.colorScheme = {
+                    categories: {
+                        'Structural Columns': '#e74c3c',
+                        'Walls': '#3498db',
+                        'Structural Framing': '#f39c12',
+                        'Pipes': '#2ecc71',
+                        'Curtain Wall Mullions': '#9b59b6',
+                        'Pipe Fittings': '#1abc9c',
+                        'Floors': '#34495e',
+                        'Furniture': '#e67e22',
+                        'Curtain Panels': '#16a085',
+                        'Electrical Fixtures': '#f1c40f',
+                        'Lighting Fixtures': '#e74c3c',
+                        'Fire Alarm Devices': '#c0392b',
+                        'Doors': '#8e44ad',
+                        'Windows': '#3498db',
+                        'Plumbing Fixtures': '#27ae60',
+                        'Mechanical Equipment': '#d35400',
+                        'Stairs': '#7f8c8d',
+                        'Railings': '#95a5a6',
+                        'Ceilings': '#ecf0f1'
+                    },
+                    nodeTypes: {
+                        'root': '#ffd700',
+                        'category': '#e74c3c',
+                        'family': '#3498db',
+                        'familyType': '#2ecc71',
+                        'element': '#9b59b6',
+                        'level': '#f39c12',
+                        'system': '#1abc9c',
+                        'phase': '#e67e22'
+                    }
+                };
+                this.setupEventListeners();
+                this.loadSampleData();
+            }
+
+            setupEventListeners() {
+                // Upload handling
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea?.addEventListener('click', () => fileInput.click());
+                uploadArea?.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadArea?.addEventListener('drop', this.handleDrop.bind(this));
+                fileInput?.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // Control listeners
+                document.getElementById('viewMode').addEventListener('change', () => this.rebuildNetwork());
+                document.getElementById('categoryFilter').addEventListener('change', () => this.updateVisualization());
+                document.getElementById('nodeSize').addEventListener('input', (e) => {
+                    document.getElementById('sizeValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('linkStrength').addEventListener('input', (e) => {
+                    document.getElementById('strengthValue').textContent = e.target.value;
+                    this.updateVisualization();
+                });
+                document.getElementById('resetView').addEventListener('click', () => this.resetView());
+                document.getElementById('exportData').addEventListener('click', () => this.exportNetworkData());
+                document.getElementById('nodeSearch').addEventListener('input', (e) => this.searchNodes(e.target.value));
+
+                // Relationship toggles
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const rel = btn.dataset.rel;
+                        btn.classList.toggle('active');
+                        if (btn.classList.contains('active')) {
+                            this.activeRelationships.add(rel);
+                        } else {
+                            this.activeRelationships.delete(rel);
+                        }
+                        this.rebuildNetwork();
+                    });
+                });
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length > 0) this.processFile(files[0]);
+            }
+
+            async loadSampleData() {
+                // Create sample data based on the Revit structure
+                this.showProcessing(true);
+
+                // Sample category counts from the provided data
+                const categoryCounts = {
+                    'Structural Columns': 988,
+                    'Walls': 602,
+                    'Structural Framing': 406,
+                    'Pipes': 378,
+                    'Curtain Wall Mullions': 363,
+                    'Pipe Fittings': 345,
+                    'Floors': 174,
+                    'Lines: <Room Separation>': 141,
+                    'Furniture': 123,
+                    'Curtain Panels': 101,
+                    'Electrical Fixtures': 101,
+                    'Lighting Fixtures': 97,
+                    'Fire Alarm Devices': 65,
+                    'Doors': 43,
+                    'Windows': 37,
+                    'Model Groups': 37,
+                    'Plumbing Fixtures': 33,
+                    'Generic Models': 30,
+                    'Mechanical Equipment': 21,
+                    'Stairs': 5
+                };
+
+                // Generate sample dataset
+                const sampleData = [];
+                let elementId = 1000;
+
+                for (const [category, count] of Object.entries(categoryCounts)) {
+                    // Create sample elements for each category
+                    const elementsToCreate = Math.min(count, 50); // Limit for performance
+
+                    for (let i = 0; i < elementsToCreate; i++) {
+                        const familyNum = Math.floor(i / 10) + 1;
+                        const typeNum = Math.floor(i / 5) + 1;
+                        const level = this.getRandomLevel();
+
+                        sampleData.push({
+                            Element_Id: elementId++,
+                            Category: category,
+                            Family: `${category} Family ${familyNum}`,
+                            'Family and Type': `${category} Family ${familyNum}: Type ${typeNum}`,
+                            Level: level,
+                            Host: this.getRandomHost(category),
+                            'System Type': this.getSystemType(category),
+                            'System Name': this.getSystemName(category),
+                            'Phase Created': 'New Construction',
+                            'Design Option': Math.random() > 0.8 ? Math.floor(Math.random() * 3) + 1 : -1,
+                            Mark: `${category.substring(0, 3).toUpperCase()}-${elementId}`,
+                            Area: category === 'Floors' || category === 'Ceilings' ? (Math.random() * 100).toFixed(2) : '',
+                            Volume: (Math.random() * 10).toFixed(2),
+                            Length: category.includes('Pipe') || category.includes('Framing') ? (Math.random() * 20).toFixed(2) : '',
+                            Height: (Math.random() * 3 + 2.5).toFixed(2),
+                            'Base Level': level,
+                            'Top Level': category === 'Walls' || category === 'Structural Columns' ? this.getTopLevel(level) : '',
+                            'Distribution System': category.includes('Electrical') ? `Panel ${Math.floor(Math.random() * 5) + 1}` : '',
+                            'Circuit Number': category.includes('Electrical') || category.includes('Lighting') ? Math.floor(Math.random() * 100) + 1 : 0,
+                            Voltage: category.includes('Electrical') ? 220 : 0
+                        });
+                    }
+                }
+
+                this.csvData = sampleData;
+                this.processCSVData();
+                this.showProcessing(false);
+            }
+
+            getRandomLevel() {
+                const levels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Roof'];
+                return levels[Math.floor(Math.random() * levels.length)];
+            }
+
+            getTopLevel(baseLevel) {
+                const levelStr = String(baseLevel);
+                const levelNum = parseInt(levelStr.replace('Level ', ''));
+                if (levelNum && levelNum < 5) {
+                    return `Level ${levelNum + 1}`;
+                }
+                return 'Roof';
+            }
+
+            getRandomHost(category) {
+                if (category === 'Doors' || category === 'Windows') {
+                    return `Wall ${Math.floor(Math.random() * 100) + 1}`;
+                } else if (category === 'Electrical Fixtures' || category === 'Lighting Fixtures') {
+                    return `Ceiling ${Math.floor(Math.random() * 50) + 1}`;
+                }
+                return '';
+            }
+
+            getSystemType(category) {
+                if (category.includes('Pipe') || category.includes('Plumbing')) return 'Supply';
+                if (category.includes('Electrical') || category.includes('Lighting')) return 'Electrical';
+                if (category.includes('Mechanical')) return 'HVAC';
+                if (category.includes('Fire')) return 'Fire Protection';
+                return '';
+            }
+
+            getSystemName(category) {
+                if (category.includes('Pipe') || category.includes('Plumbing')) return `Water System ${Math.floor(Math.random() * 3) + 1}`;
+                if (category.includes('Electrical') || category.includes('Lighting')) return `Electrical Circuit ${Math.floor(Math.random() * 10) + 1}`;
+                if (category.includes('Mechanical')) return `HVAC Zone ${Math.floor(Math.random() * 5) + 1}`;
+                if (category.includes('Fire')) return 'Fire Alarm System';
+                return '';
+            }
+
+            async processFile(file) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    this.showError('Please select a valid CSV file');
+                    return;
+                }
+
+                this.showProcessing(true);
+                this.hideError();
+
+                try {
+                    const text = await this.readFileAsText(file);
+                    Papa.parse(text, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            if (results.errors && results.errors.length > 0) {
+                                console.warn('CSV parsing warnings:', results.errors);
+                            }
+                            console.log(`CSV loaded: ${results.data.length} rows, ${results.meta.fields?.length || 0} columns`);
+
+                            if (results.data.length === 0) {
+                                this.showError('CSV file appears to be empty');
+                                this.showProcessing(false);
+                                return;
+                            }
+
+                            // Check for essential Revit columns
+                            const requiredColumns = ['Element_Id', 'Category'];
+                            const missingColumns = requiredColumns.filter(col =>
+                                !results.meta.fields || !results.meta.fields.includes(col)
+                            );
+
+                            if (missingColumns.length > 0) {
+                                this.showError(`Missing required columns: ${missingColumns.join(', ')}. Please ensure this is a valid Revit CSV export.`);
+                                this.showProcessing(false);
+                                return;
+                            }
+
+                            this.csvData = results.data;
+                            this.processCSVData();
+                            this.showProcessing(false);
+                        },
+                        error: (error) => {
+                            console.error('CSV parsing error:', error);
+                            this.showError(`Error parsing CSV: ${error.message}`);
+                            this.showProcessing(false);
+                        }
+                    });
+                } catch (error) {
+                    console.error('File reading error:', error);
+                    this.showError(`Error reading file: ${error.message}`);
+                    this.showProcessing(false);
+                }
+            }
+
+            readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(new Error('Failed to read file'));
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+
+            // Helper function to safely get string value
+            safeString(value) {
+                if (value === null || value === undefined) return '';
+                return String(value).trim();
+            }
+
+            processCSVData() {
+                // Clear existing maps
+                this.elementMap.clear();
+                this.categoryMap.clear();
+                this.familyMap.clear();
+                this.levelMap.clear();
+                this.systemMap.clear();
+                this.hostMap.clear();
+                this.phaseMap.clear();
+
+                let processedCount = 0;
+                let errorCount = 0;
+
+                // Log first row columns for debugging
+                if (this.csvData.length > 0) {
+                    console.log('Available columns:', Object.keys(this.csvData[0]));
+                }
+
+                // Process each row
+                this.csvData.forEach((row, index) => {
+                    try {
+                        const elementId = row['Element_Id'];
+                        const category = this.safeString(row['Category']);
+
+                        if (elementId && category) {
+                            // Store element
+                            this.elementMap.set(elementId, row);
+
+                            // Process categories
+                            if (!this.categoryMap.has(category)) {
+                                this.categoryMap.set(category, new Set());
+                            }
+                            this.categoryMap.get(category).add(elementId);
+
+                            // Process families
+                            const family = this.safeString(row['Family']);
+                            const familyType = this.safeString(row['Family and Type']);
+
+                            if (family) {
+                                if (!this.familyMap.has(family)) {
+                                    this.familyMap.set(family, {
+                                        category: category,
+                                        types: new Map(),
+                                        elements: new Set()
+                                    });
+                                }
+                                this.familyMap.get(family).elements.add(elementId);
+
+                                if (familyType) {
+                                    const typeKey = familyType.includes(':') ?
+                                        familyType.split(':')[1].trim() : familyType;
+                                    if (!this.familyMap.get(family).types.has(typeKey)) {
+                                        this.familyMap.get(family).types.set(typeKey, new Set());
+                                    }
+                                    this.familyMap.get(family).types.get(typeKey).add(elementId);
+                                }
+                            }
+
+                            // Process levels
+                            const levels = [
+                                this.safeString(row['Level']),
+                                this.safeString(row['Base Level']),
+                                this.safeString(row['Top Level']),
+                                this.safeString(row['Reference Level'])
+                            ].filter(l => l);
+
+                            levels.forEach(level => {
+                                if (!this.levelMap.has(level)) {
+                                    this.levelMap.set(level, new Set());
+                                }
+                                this.levelMap.get(level).add(elementId);
+                            });
+
+                            // Process systems
+                            const systemType = this.safeString(row['System Type']);
+                            const systemName = this.safeString(row['System Name']);
+
+                            if (systemName) {
+                                const systemKey = `${systemType || 'General'}: ${systemName}`;
+                                if (!this.systemMap.has(systemKey)) {
+                                    this.systemMap.set(systemKey, new Set());
+                                }
+                                this.systemMap.get(systemKey).add(elementId);
+                            }
+
+                            // Process host relationships
+                            const host = this.safeString(row['Host']);
+                            if (host) {
+                                if (!this.hostMap.has(host)) {
+                                    this.hostMap.set(host, {
+                                        hostedElements: new Set(),
+                                        hostType: ''
+                                    });
+                                }
+                                this.hostMap.get(host).hostedElements.add(elementId);
+                            }
+
+                            // Process phases
+                            const phaseCreated = this.safeString(row['Phase Created']);
+                            if (phaseCreated) {
+                                if (!this.phaseMap.has(phaseCreated)) {
+                                    this.phaseMap.set(phaseCreated, new Set());
+                                }
+                                this.phaseMap.get(phaseCreated).add(elementId);
+                            }
+
+                            processedCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Error processing row ${index}:`, error);
+                        if (errorCount < 5) { // Log first 5 errors in detail
+                            console.error('Row data:', row);
+                        }
+                        errorCount++;
+                    }
+                });
+
+                console.log(`Processed ${processedCount} elements successfully, ${errorCount} errors`);
+
+                if (processedCount === 0) {
+                    this.showError('No valid elements could be processed from the CSV file');
+                    return;
+                }
+
+                this.updateStats();
+                this.populateFilters();
+                this.buildNetwork();
+                this.updateAnalysis();
+                this.populateCategoryGrid();
+                this.initializeVisualization();
+            }
+
+            updateStats() {
+                document.getElementById('totalElements').textContent = this.elementMap.size.toLocaleString();
+                document.getElementById('categories').textContent = this.categoryMap.size.toLocaleString();
+                document.getElementById('families').textContent = this.familyMap.size.toLocaleString();
+                document.getElementById('levels').textContent = this.levelMap.size.toLocaleString();
+                document.getElementById('systems').textContent = this.systemMap.size.toLocaleString();
+
+                // Count active relationships
+                let relationshipCount = 0;
+                this.networkData.links.forEach(() => relationshipCount++);
+                document.getElementById('activeRelationships').textContent = relationshipCount.toLocaleString();
+            }
+
+            populateFilters() {
+                const categoryFilter = document.getElementById('categoryFilter');
+                categoryFilter.innerHTML = '<option value="all" selected>All Categories</option>';
+
+                // Sort categories by element count
+                const sortedCategories = Array.from(this.categoryMap.entries())
+                    .sort((a, b) => b[1].size - a[1].size);
+
+                sortedCategories.forEach(([category, elements]) => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = `${category} (${elements.size})`;
+                    categoryFilter.appendChild(option);
+                });
+            }
+
+            populateCategoryGrid() {
+                const grid = document.getElementById('categoryGrid');
+                grid.innerHTML = '';
+
+                const topCategories = Array.from(this.categoryMap.entries())
+                    .sort((a, b) => b[1].size - a[1].size)
+                    .slice(0, 12);
+
+                topCategories.forEach(([category, elements]) => {
+                    const item = document.createElement('div');
+                    item.className = 'hierarchy-item';
+                    item.dataset.category = category;
+                    item.innerHTML = `
+                        <div class="hierarchy-label">${category}</div>
+                        <div class="hierarchy-value">${elements.size.toLocaleString()}</div>
+                    `;
+
+                    item.addEventListener('click', () => {
+                        const categoryFilter = document.getElementById('categoryFilter');
+                        categoryFilter.value = category;
+                        this.updateVisualization();
+                    });
+
+                    grid.appendChild(item);
+                });
+            }
+
+            buildNetwork() {
+                const viewMode = document.getElementById('viewMode').value;
+
+                switch (viewMode) {
+                    case 'category-hierarchy':
+                        this.buildCategoryHierarchy();
+                        break;
+                    case 'family-structure':
+                        this.buildFamilyStructure();
+                        break;
+                    case 'level-spatial':
+                        this.buildLevelSpatial();
+                        break;
+                    case 'system-network':
+                        this.buildSystemNetwork();
+                        break;
+                    case 'host-relationships':
+                        this.buildHostRelationships();
+                        break;
+                    case 'phase-timeline':
+                        this.buildPhaseTimeline();
+                        break;
+                    case 'combined':
+                        this.buildCombinedNetwork();
+                        break;
+                }
+            }
+
+            buildCategoryHierarchy() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Revit Model',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Category nodes
+                const categoryNodes = new Map();
+                this.categoryMap.forEach((elements, category) => {
+                    const catId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: catId,
+                        label: category,
+                        type: 'category',
+                        category: category,
+                        level: 1,
+                        count: elements.size,
+                        size: Math.max(10, Math.min(25, Math.log(elements.size + 1) * 5))
+                    });
+                    categoryNodes.set(category, catId);
+
+                    if (this.activeRelationships.has('hierarchy')) {
+                        links.push({ source: rootId, target: catId, type: 'hierarchy' });
+                    }
+                });
+
+                // Family nodes
+                if (this.activeRelationships.has('family')) {
+                    const familyNodes = new Map();
+                    this.familyMap.forEach((familyData, familyName) => {
+                        const famId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: famId,
+                            label: familyName,
+                            type: 'family',
+                            category: familyData.category,
+                            level: 2,
+                            count: familyData.elements.size,
+                            size: Math.max(8, Math.min(20, Math.log(familyData.elements.size + 1) * 4))
+                        });
+                        familyNodes.set(familyName, famId);
+
+                        const catNodeId = categoryNodes.get(familyData.category);
+                        if (catNodeId) {
+                            links.push({ source: catNodeId, target: famId, type: 'family' });
+                        }
+
+                        // Family type nodes
+                        familyData.types.forEach((typeElements, typeName) => {
+                            const typeId = `node_${nodeId++}`;
+                            nodes.push({
+                                id: typeId,
+                                label: typeName,
+                                type: 'familyType',
+                                family: familyName,
+                                level: 3,
+                                count: typeElements.size,
+                                size: Math.max(5, Math.min(15, Math.log(typeElements.size + 1) * 3))
+                            });
+
+                            links.push({ source: famId, target: typeId, type: 'type' });
+                        });
+                    });
+                }
+
+                // Add some individual elements (limited)
+                const elementLimit = 100;
+                let elementsAdded = 0;
+
+                this.categoryMap.forEach((elements, category) => {
+                    if (elementsAdded >= elementLimit) return;
+
+                    const catNodeId = categoryNodes.get(category);
+                    const elementsToShow = Math.min(5, elementLimit - elementsAdded);
+
+                    Array.from(elements).slice(0, elementsToShow).forEach(elementId => {
+                        const element = this.elementMap.get(elementId);
+                        if (element) {
+                            const elemNodeId = `node_${nodeId++}`;
+                            const mark = this.safeString(element.Mark);
+                            nodes.push({
+                                id: elemNodeId,
+                                label: mark || `Element ${elementId}`,
+                                type: 'element',
+                                category: category,
+                                level: 4,
+                                size: 4,
+                                data: element
+                            });
+
+                            links.push({ source: catNodeId, target: elemNodeId, type: 'element' });
+                            elementsAdded++;
+                        }
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildFamilyStructure() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Family Structure',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Category nodes for grouping
+                const categoryNodes = new Map();
+                const categoriesUsed = new Set();
+
+                this.familyMap.forEach((familyData) => {
+                    categoriesUsed.add(familyData.category);
+                });
+
+                categoriesUsed.forEach(category => {
+                    const catId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: catId,
+                        label: category,
+                        type: 'category',
+                        level: 1,
+                        size: 20
+                    });
+                    categoryNodes.set(category, catId);
+                    links.push({ source: rootId, target: catId, type: 'hierarchy' });
+                });
+
+                // Family and type structure
+                this.familyMap.forEach((familyData, familyName) => {
+                    const famId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: famId,
+                        label: familyName,
+                        type: 'family',
+                        category: familyData.category,
+                        level: 2,
+                        count: familyData.elements.size,
+                        size: Math.max(10, Math.min(20, Math.log(familyData.elements.size + 1) * 5))
+                    });
+
+                    const catNodeId = categoryNodes.get(familyData.category);
+                    if (catNodeId) {
+                        links.push({ source: catNodeId, target: famId, type: 'family' });
+                    }
+
+                    // Type nodes
+                    familyData.types.forEach((typeElements, typeName) => {
+                        const typeId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: typeId,
+                            label: typeName,
+                            type: 'familyType',
+                            family: familyName,
+                            level: 3,
+                            count: typeElements.size,
+                            size: Math.max(6, Math.min(12, Math.log(typeElements.size + 1) * 3))
+                        });
+
+                        links.push({ source: famId, target: typeId, type: 'type' });
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildLevelSpatial() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Spatial Structure',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Level nodes
+                const levelNodes = new Map();
+                const sortedLevels = Array.from(this.levelMap.keys()).sort((a, b) => {
+                    const aMatch = String(a).match(/\d+/);
+                    const bMatch = String(b).match(/\d+/);
+                    const aNum = aMatch ? parseInt(aMatch[0]) : 0;
+                    const bNum = bMatch ? parseInt(bMatch[0]) : 0;
+                    return aNum - bNum;
+                });
+
+                sortedLevels.forEach(level => {
+                    const elements = this.levelMap.get(level);
+                    const levelId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: levelId,
+                        label: level,
+                        type: 'level',
+                        level: 1,
+                        count: elements.size,
+                        size: Math.max(10, Math.min(25, Math.log(elements.size + 1) * 5))
+                    });
+                    levelNodes.set(level, levelId);
+                    links.push({ source: rootId, target: levelId, type: 'hierarchy' });
+                });
+
+                // Add category groupings per level
+                if (this.activeRelationships.has('spatial')) {
+                    levelNodes.forEach((levelNodeId, levelName) => {
+                        const levelElements = this.levelMap.get(levelName);
+                        const categoriesOnLevel = new Map();
+
+                        levelElements.forEach(elementId => {
+                            const element = this.elementMap.get(elementId);
+                            if (element) {
+                                const elementCategory = this.safeString(element.Category);
+                                if (elementCategory) {
+                                    if (!categoriesOnLevel.has(elementCategory)) {
+                                        categoriesOnLevel.set(elementCategory, 0);
+                                    }
+                                    categoriesOnLevel.set(elementCategory, categoriesOnLevel.get(elementCategory) + 1);
+                                }
+                            }
+                        });
+
+                        categoriesOnLevel.forEach((count, category) => {
+                            if (count > 5) { // Filter small groups
+                                const catLevelId = `node_${nodeId++}`;
+                                nodes.push({
+                                    id: catLevelId,
+                                    label: `${category} (${count})`,
+                                    type: 'category',
+                                    category: category,
+                                    level: 2,
+                                    count: count,
+                                    size: Math.max(6, Math.min(15, Math.log(count + 1) * 3))
+                                });
+                                links.push({ source: levelNodeId, target: catLevelId, type: 'spatial' });
+                            }
+                        });
+                    });
+                }
+
+                // Add level-to-level connections for multi-story elements
+                if (this.activeRelationships.has('spatial')) {
+                    const levelConnections = new Map();
+
+                    this.elementMap.forEach(element => {
+                        const baseLevel = this.safeString(element['Base Level']);
+                        const topLevel = this.safeString(element['Top Level']);
+
+                        if (baseLevel && topLevel && baseLevel !== topLevel) {
+                            const key = `${baseLevel}|${topLevel}`;
+                            if (!levelConnections.has(key)) {
+                                levelConnections.set(key, 0);
+                            }
+                            levelConnections.set(key, levelConnections.get(key) + 1);
+                        }
+                    });
+
+                    levelConnections.forEach((count, key) => {
+                        const [base, top] = key.split('|');
+                        if (levelNodes.has(base) && levelNodes.has(top) && count > 10) {
+                            links.push({
+                                source: levelNodes.get(base),
+                                target: levelNodes.get(top),
+                                type: 'vertical',
+                                strength: Math.min(count / 50, 3)
+                            });
+                        }
+                    });
+                }
+
+                this.networkData = { nodes, links };
+            }
+
+            buildSystemNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Building Systems',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // System type groupings
+                const systemTypes = new Map();
+                this.systemMap.forEach((elements, systemName) => {
+                    const colonIndex = systemName.indexOf(':');
+                    const type = colonIndex > -1 ? systemName.substring(0, colonIndex).trim() : 'General';
+                    if (!systemTypes.has(type)) {
+                        systemTypes.set(type, []);
+                    }
+                    systemTypes.get(type).push({ name: systemName, elements });
+                });
+
+                // Create system type nodes
+                const typeNodes = new Map();
+                systemTypes.forEach((systems, typeName) => {
+                    const typeId = `node_${nodeId++}`;
+                    const totalElements = systems.reduce((sum, sys) => sum + sys.elements.size, 0);
+
+                    nodes.push({
+                        id: typeId,
+                        label: typeName,
+                        type: 'system',
+                        level: 1,
+                        count: totalElements,
+                        size: Math.max(12, Math.min(25, Math.log(totalElements + 1) * 5))
+                    });
+                    typeNodes.set(typeName, typeId);
+                    links.push({ source: rootId, target: typeId, type: 'hierarchy' });
+                });
+
+                // Create individual system nodes
+                this.systemMap.forEach((elements, systemName) => {
+                    const colonIndex = systemName.indexOf(':');
+                    const type = colonIndex > -1 ? systemName.substring(0, colonIndex).trim() : 'General';
+                    const sysId = `node_${nodeId++}`;
+
+                    nodes.push({
+                        id: sysId,
+                        label: systemName,
+                        type: 'system',
+                        level: 2,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(20, Math.log(elements.size + 1) * 4))
+                    });
+
+                    const typeNodeId = typeNodes.get(type);
+                    if (typeNodeId) {
+                        links.push({ source: typeNodeId, target: sysId, type: 'system' });
+                    }
+
+                    // Add element categories in system
+                    const categoriesInSystem = new Map();
+                    elements.forEach(elementId => {
+                        const element = this.elementMap.get(elementId);
+                        if (element) {
+                            const elementCategory = this.safeString(element.Category);
+                            if (elementCategory) {
+                                if (!categoriesInSystem.has(elementCategory)) {
+                                    categoriesInSystem.set(elementCategory, 0);
+                                }
+                                categoriesInSystem.set(elementCategory, categoriesInSystem.get(elementCategory) + 1);
+                            }
+                        }
+                    });
+
+                    categoriesInSystem.forEach((count, category) => {
+                        if (count > 3) {
+                            const catSysId = `node_${nodeId++}`;
+                            nodes.push({
+                                id: catSysId,
+                                label: `${category} (${count})`,
+                                type: 'category',
+                                category: category,
+                                level: 3,
+                                count: count,
+                                size: Math.max(5, Math.min(10, Math.log(count + 1) * 3))
+                            });
+                            links.push({ source: sysId, target: catSysId, type: 'contains' });
+                        }
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildHostRelationships() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Host Relationships',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Group hosts by type
+                const hostTypes = new Map();
+                this.hostMap.forEach((hostData, hostName) => {
+                    // Determine host type from name
+                    let hostType = 'Other';
+                    if (hostName.includes('Wall')) hostType = 'Walls';
+                    else if (hostName.includes('Floor')) hostType = 'Floors';
+                    else if (hostName.includes('Ceiling')) hostType = 'Ceilings';
+                    else if (hostName.includes('Roof')) hostType = 'Roofs';
+
+                    if (!hostTypes.has(hostType)) {
+                        hostTypes.set(hostType, []);
+                    }
+                    hostTypes.get(hostType).push({ name: hostName, data: hostData });
+                });
+
+                // Create host type nodes
+                hostTypes.forEach((hosts, typeName) => {
+                    const typeId = `node_${nodeId++}`;
+                    const totalHosted = hosts.reduce((sum, h) => sum + h.data.hostedElements.size, 0);
+
+                    nodes.push({
+                        id: typeId,
+                        label: `${typeName} (${hosts.length} hosts)`,
+                        type: 'category',
+                        level: 1,
+                        count: totalHosted,
+                        size: Math.max(10, Math.min(20, Math.log(totalHosted + 1) * 5))
+                    });
+
+                    links.push({ source: rootId, target: typeId, type: 'hierarchy' });
+
+                    // Create individual host nodes
+                    hosts.forEach(({ name, data }) => {
+                        if (data.hostedElements.size > 0) {
+                            const hostId = `node_${nodeId++}`;
+                            nodes.push({
+                                id: hostId,
+                                label: name,
+                                type: 'host',
+                                level: 2,
+                                count: data.hostedElements.size,
+                                size: Math.max(8, Math.min(15, Math.log(data.hostedElements.size + 1) * 4))
+                            });
+
+                            links.push({ source: typeId, target: hostId, type: 'host' });
+
+                            // Group hosted elements by category
+                            const hostedCategories = new Map();
+                            data.hostedElements.forEach(elementId => {
+                                const element = this.elementMap.get(elementId);
+                                if (element) {
+                                    const elementCategory = this.safeString(element.Category);
+                                    if (elementCategory) {
+                                        if (!hostedCategories.has(elementCategory)) {
+                                            hostedCategories.set(elementCategory, 0);
+                                        }
+                                        hostedCategories.set(elementCategory, hostedCategories.get(elementCategory) + 1);
+                                    }
+                                }
+                            });
+
+                            hostedCategories.forEach((count, category) => {
+                                const hostedCatId = `node_${nodeId++}`;
+                                nodes.push({
+                                    id: hostedCatId,
+                                    label: `${category} (${count})`,
+                                    type: 'category',
+                                    category: category,
+                                    level: 3,
+                                    count: count,
+                                    size: Math.max(5, Math.min(10, Math.log(count + 1) * 3))
+                                });
+                                links.push({ source: hostId, target: hostedCatId, type: 'hosted' });
+                            });
+                        }
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildPhaseTimeline() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Construction Phases',
+                    type: 'root',
+                    level: 0,
+                    size: 30
+                });
+
+                // Phase nodes
+                const phaseOrder = ['Existing', 'Demolition', 'New Construction', 'Future'];
+                const phaseNodes = new Map();
+
+                phaseOrder.forEach((phaseName, index) => {
+                    const phaseElements = this.phaseMap.get(phaseName);
+                    if (phaseElements && phaseElements.size > 0) {
+                        const phaseId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: phaseId,
+                            label: phaseName,
+                            type: 'phase',
+                            level: 1,
+                            count: phaseElements.size,
+                            order: index,
+                            size: Math.max(12, Math.min(25, Math.log(phaseElements.size + 1) * 5))
+                        });
+                        phaseNodes.set(phaseName, phaseId);
+                        links.push({ source: rootId, target: phaseId, type: 'hierarchy' });
+                    }
+                });
+
+                // Add sequential links between phases
+                if (this.activeRelationships.has('phase')) {
+                    for (let i = 0; i < phaseOrder.length - 1; i++) {
+                        const currentPhase = phaseOrder[i];
+                        const nextPhase = phaseOrder[i + 1];
+
+                        if (phaseNodes.has(currentPhase) && phaseNodes.has(nextPhase)) {
+                            links.push({
+                                source: phaseNodes.get(currentPhase),
+                                target: phaseNodes.get(nextPhase),
+                                type: 'sequence'
+                            });
+                        }
+                    }
+                }
+
+                // Add categories per phase
+                phaseNodes.forEach((phaseNodeId, phaseName) => {
+                    const phaseElements = this.phaseMap.get(phaseName);
+                    const categoriesInPhase = new Map();
+
+                    phaseElements.forEach(elementId => {
+                        const element = this.elementMap.get(elementId);
+                        if (element) {
+                            const elementCategory = this.safeString(element.Category);
+                            if (elementCategory) {
+                                if (!categoriesInPhase.has(elementCategory)) {
+                                    categoriesInPhase.set(elementCategory, 0);
+                                }
+                                categoriesInPhase.set(elementCategory, categoriesInPhase.get(elementCategory) + 1);
+                            }
+                        }
+                    });
+
+                    const topCategories = Array.from(categoriesInPhase.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 8);
+
+                    topCategories.forEach(([category, count]) => {
+                        const catPhaseId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: catPhaseId,
+                            label: `${category} (${count})`,
+                            type: 'category',
+                            category: category,
+                            level: 2,
+                            count: count,
+                            size: Math.max(6, Math.min(12, Math.log(count + 1) * 3))
+                        });
+                        links.push({ source: phaseNodeId, target: catPhaseId, type: 'contains' });
+                    });
+                });
+
+                this.networkData = { nodes, links };
+            }
+
+            buildCombinedNetwork() {
+                const nodes = [];
+                const links = [];
+                let nodeId = 0;
+
+                // Root node
+                const rootId = `node_${nodeId++}`;
+                nodes.push({
+                    id: rootId,
+                    label: 'Revit BIM Model',
+                    type: 'root',
+                    level: 0,
+                    size: 35
+                });
+
+                // Main branches
+                const branches = [
+                    { id: 'categories', label: 'Categories', type: 'branch' },
+                    { id: 'levels', label: 'Levels', type: 'branch' },
+                    { id: 'systems', label: 'Systems', type: 'branch' },
+                    { id: 'phases', label: 'Phases', type: 'branch' }
+                ];
+
+                const branchNodes = new Map();
+                branches.forEach(branch => {
+                    const branchId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: branchId,
+                        label: branch.label,
+                        type: branch.type,
+                        level: 1,
+                        size: 25
+                    });
+                    branchNodes.set(branch.id, branchId);
+                    links.push({ source: rootId, target: branchId, type: 'hierarchy' });
+                });
+
+                // Add top categories
+                const topCategories = Array.from(this.categoryMap.entries())
+                    .sort((a, b) => b[1].size - a[1].size)
+                    .slice(0, 10);
+
+                const categoryNodeMap = new Map();
+                topCategories.forEach(([category, elements]) => {
+                    const catId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: catId,
+                        label: `${category} (${elements.size})`,
+                        type: 'category',
+                        category: category,
+                        level: 2,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(20, Math.log(elements.size + 1) * 4))
+                    });
+                    categoryNodeMap.set(category, catId);
+                    links.push({ source: branchNodes.get('categories'), target: catId, type: 'hierarchy' });
+                });
+
+                // Add levels
+                const levelNodeMap = new Map();
+                this.levelMap.forEach((elements, level) => {
+                    const levelId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: levelId,
+                        label: `${level} (${elements.size})`,
+                        type: 'level',
+                        level: 2,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(18, Math.log(elements.size + 1) * 4))
+                    });
+                    levelNodeMap.set(level, levelId);
+                    links.push({ source: branchNodes.get('levels'), target: levelId, type: 'hierarchy' });
+                });
+
+                // Add major systems
+                const systemTypeCount = new Map();
+                this.systemMap.forEach((elements, systemName) => {
+                    const colonIndex = systemName.indexOf(':');
+                    const type = colonIndex > -1 ? systemName.substring(0, colonIndex).trim() : 'General';
+                    if (!systemTypeCount.has(type)) {
+                        systemTypeCount.set(type, 0);
+                    }
+                    systemTypeCount.set(type, systemTypeCount.get(type) + elements.size);
+                });
+
+                systemTypeCount.forEach((count, systemType) => {
+                    if (count > 20) {
+                        const sysTypeId = `node_${nodeId++}`;
+                        nodes.push({
+                            id: sysTypeId,
+                            label: `${systemType} (${count})`,
+                            type: 'system',
+                            level: 2,
+                            count: count,
+                            size: Math.max(8, Math.min(16, Math.log(count + 1) * 4))
+                        });
+                        links.push({ source: branchNodes.get('systems'), target: sysTypeId, type: 'hierarchy' });
+                    }
+                });
+
+                // Add phases
+                this.phaseMap.forEach((elements, phase) => {
+                    const phaseId = `node_${nodeId++}`;
+                    nodes.push({
+                        id: phaseId,
+                        label: `${phase} (${elements.size})`,
+                        type: 'phase',
+                        level: 2,
+                        count: elements.size,
+                        size: Math.max(8, Math.min(16, Math.log(elements.size + 1) * 4))
+                    });
+                    links.push({ source: branchNodes.get('phases'), target: phaseId, type: 'hierarchy' });
+                });
+
+                // Add cross-relationships if enabled
+                if (this.activeRelationships.has('spatial')) {
+                    // Link categories to levels where they appear most
+                    categoryNodeMap.forEach((catNodeId, category) => {
+                        const levelDistribution = new Map();
+                        const categoryElements = this.categoryMap.get(category);
+
+                        categoryElements.forEach(elementId => {
+                            const element = this.elementMap.get(elementId);
+                            if (element) {
+                                const elementLevel = this.safeString(element.Level);
+                                if (elementLevel) {
+                                    levelDistribution.set(elementLevel, (levelDistribution.get(elementLevel) || 0) + 1);
+                                }
+                            }
+                        });
+
+                        // Link to top 2 levels
+                        const topLevels = Array.from(levelDistribution.entries())
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 2);
+
+                        topLevels.forEach(([level, count]) => {
+                            if (levelNodeMap.has(level) && count > 10) {
+                                links.push({
+                                    source: catNodeId,
+                                    target: levelNodeMap.get(level),
+                                    type: 'spatial',
+                                    strength: Math.min(count / 100, 2)
+                                });
+                            }
+                        });
+                    });
+                }
+
+                this.networkData = { nodes, links };
+            }
+
+            rebuildNetwork() {
+                this.buildNetwork();
+                this.updateVisualization();
+            }
+
+            initializeVisualization() {
+                this.createVisualization();
+            }
+
+            createVisualization() {
+                // Clear previous visualization
+                d3.select('#network-container svg').remove();
+
+                const container = d3.select('#network-container');
+                const width = container.node().getBoundingClientRect().width;
+                const height = 800;
+
+                const svg = container.append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g');
+
+                // Define gradients for links
+                const defs = svg.append('defs');
+
+                // Zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 10])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+
+                svg.call(zoom);
+
+                // Store references
+                this.svg = svg;
+                this.g = g;
+                this.zoom = zoom;
+                this.width = width;
+                this.height = height;
+
+                this.updateVisualization();
+            }
+
+            updateVisualization() {
+                if (!this.g) return;
+
+                this.g.selectAll('*').remove();
+
+                // Filter data based on selected categories
+                const categoryFilter = document.getElementById('categoryFilter');
+                const selectedCategories = Array.from(categoryFilter.selectedOptions).map(opt => opt.value);
+
+                let filteredNodes = [...this.networkData.nodes];
+                let filteredLinks = [...this.networkData.links];
+
+                if (!selectedCategories.includes('all') && selectedCategories.length > 0) {
+                    // Keep nodes that match selected categories or are connected to them
+                    const keepNodes = new Set();
+
+                    filteredNodes.forEach(node => {
+                        if (node.level === 0 || node.type === 'branch' ||
+                            (node.category && selectedCategories.includes(node.category))) {
+                            keepNodes.add(node.id);
+                        }
+                    });
+
+                    // Keep parent nodes
+                    let changed = true;
+                    while (changed) {
+                        changed = false;
+                        filteredLinks.forEach(link => {
+                            const sourceId = link.source.id || link.source;
+                            const targetId = link.target.id || link.target;
+
+                            if (keepNodes.has(targetId) && !keepNodes.has(sourceId)) {
+                                keepNodes.add(sourceId);
+                                changed = true;
+                            }
+                        });
+                    }
+
+                    filteredNodes = filteredNodes.filter(n => keepNodes.has(n.id));
+                }
+
+                // Filter links
+                const nodeIds = new Set(filteredNodes.map(n => n.id));
+                filteredLinks = filteredLinks.filter(l =>
+                    nodeIds.has(l.source.id || l.source) &&
+                    nodeIds.has(l.target.id || l.target)
+                );
+
+                // Get scale values
+                const nodeScale = parseFloat(document.getElementById('nodeSize').value);
+                const linkStrength = parseFloat(document.getElementById('linkStrength').value);
+
+                // Create force simulation
+                const simulation = d3.forceSimulation(filteredNodes)
+                    .force('link', d3.forceLink(filteredLinks)
+                        .id(d => d.id)
+                        .distance(d => {
+                            const baseDistance = d.source.level === 0 ? 250 :
+                                d.source.level === 1 ? 180 : 120;
+                            return baseDistance / linkStrength;
+                        })
+                        .strength(d => (d.strength || 1) * linkStrength))
+                    .force('charge', d3.forceManyBody()
+                        .strength(d => {
+                            const baseStrength = d.level === 0 ? -2500 :
+                                d.level === 1 ? -1500 : -600;
+                            return baseStrength * linkStrength;
+                        }))
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .force('collision', d3.forceCollide()
+                        .radius(d => (d.size || 5) * nodeScale + 5));
+
+                // Create link groups
+                const linkGroup = this.g.append('g').attr('class', 'links');
+
+                const link = linkGroup.selectAll('line')
+                    .data(filteredLinks)
+                    .join('line')
+                    .attr('stroke', d => {
+                        switch (d.type) {
+                            case 'hierarchy': return '#999';
+                            case 'family': return '#3498db';
+                            case 'spatial': return '#f39c12';
+                            case 'system': return '#2ecc71';
+                            case 'host': return '#e74c3c';
+                            case 'hosted': return '#c0392b';
+                            case 'phase': return '#9b59b6';
+                            case 'sequence': return '#8e44ad';
+                            case 'vertical': return '#1abc9c';
+                            default: return '#666';
+                        }
+                    })
+                    .attr('stroke-opacity', d => d.type === 'hierarchy' ? 0.6 : 0.4)
+                    .attr('stroke-width', d => {
+                        if (d.strength) return Math.min(d.strength * 2, 4);
+                        return d.type === 'hierarchy' ? 2 : 1;
+                    })
+                    .attr('stroke-dasharray', d => {
+                        if (d.type === 'spatial' || d.type === 'sequence') return '5,5';
+                        return null;
+                    });
+
+                // Create node groups
+                const nodeGroup = this.g.append('g').attr('class', 'nodes');
+
+                const node = nodeGroup.selectAll('g')
+                    .data(filteredNodes)
+                    .join('g')
+                    .call(d3.drag()
+                        .on('start', this.dragstarted.bind(this))
+                        .on('drag', this.dragged.bind(this))
+                        .on('end', this.dragended.bind(this)));
+
+                // Add circles
+                node.append('circle')
+                    .attr('r', d => (d.size || 5) * nodeScale)
+                    .attr('fill', d => {
+                        if (d.category && this.colorScheme.categories[d.category]) {
+                            return this.colorScheme.categories[d.category];
+                        }
+                        return this.colorScheme.nodeTypes[d.type] || '#95a5a6';
+                    })
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .style('cursor', 'pointer');
+
+                // Add labels for important nodes
+                node.filter(d => d.level <= 2 || (d.level === 3 && d.count > 20))
+                    .append('text')
+                    .text(d => {
+                        const maxLength = d.level === 0 ? 20 : d.level === 1 ? 15 : 12;
+                        const label = d.label || '';
+                        return label.length > maxLength ? label.substring(0, maxLength) + '...' : label;
+                    })
+                    .attr('font-size', d => d.level === 0 ? '14px' : d.level === 1 ? '12px' : '10px')
+                    .attr('font-weight', d => d.level <= 1 ? 'bold' : 'normal')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', d => (d.size || 5) * nodeScale + 15)
+                    .style('pointer-events', 'none');
+
+                // Tooltip
+                const tooltip = d3.select('#tooltip');
+                const analyzer = this; // Store reference for arrow function
+                node.on('mouseover', (event, d) => {
+                    let content = `<div class="tooltip-row"><span class="tooltip-label">Label:</span> <span class="tooltip-value">${d.label}</span></div>`;
+                    content += `<div class="tooltip-row"><span class="tooltip-label">Type:</span> <span class="tooltip-value">${d.type}</span></div>`;
+
+                    if (d.count) {
+                        content += `<div class="tooltip-row"><span class="tooltip-label">Count:</span> <span class="tooltip-value">${d.count}</span></div>`;
+                    }
+
+                    if (d.category) {
+                        content += `<div class="tooltip-row"><span class="tooltip-label">Category:</span> <span class="tooltip-value">${d.category}</span></div>`;
+                    }
+
+                    if (d.data) {
+                        // Show key properties from the CSV data
+                        const props = ['Level', 'Family', 'System Name', 'Volume', 'Area', 'Length'];
+                        props.forEach(prop => {
+                            const value = analyzer.safeString(d.data[prop]);
+                            if (value) {
+                                content += `<div class="tooltip-row"><span class="tooltip-label">${prop}:</span> <span class="tooltip-value">${value}</span></div>`;
+                            }
+                        });
+                    }
+
+                    tooltip.style('opacity', 1)
+                        .html(content)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                    .on('mouseout', () => {
+                        tooltip.style('opacity', 0);
+                    })
+                    .on('dblclick', (event, d) => {
+                        this.focusOnNode(d);
+                    });
+
+                // Update positions on tick
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x)
+                        .attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x)
+                        .attr('y2', d => d.target.y);
+
+                    node.attr('transform', d => `translate(${d.x},${d.y})`);
+                });
+
+                // Update legend
+                this.updateLegend();
+
+                this.simulation = simulation;
+            }
+
+            updateLegend() {
+                const legend = document.getElementById('legend');
+                legend.innerHTML = '';
+
+                // Node types section
+                const nodeSection = document.createElement('div');
+                nodeSection.className = 'legend-section';
+                nodeSection.innerHTML = '<div class="legend-title">Node Types</div>';
+
+                const nodeTypes = [
+                    { type: 'root', label: 'Root' },
+                    { type: 'category', label: 'Category' },
+                    { type: 'family', label: 'Family' },
+                    { type: 'familyType', label: 'Family Type' },
+                    { type: 'element', label: 'Element' },
+                    { type: 'level', label: 'Level' },
+                    { type: 'system', label: 'System' },
+                    { type: 'phase', label: 'Phase' }
+                ];
+
+                nodeTypes.forEach(({ type, label }) => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <div class="legend-color" style="background: ${this.colorScheme.nodeTypes[type] || '#95a5a6'};"></div>
+                        <span>${label}</span>
+                    `;
+                    nodeSection.appendChild(item);
+                });
+
+                legend.appendChild(nodeSection);
+
+                // Categories section (show only visible)
+                const visibleCategories = new Set();
+                this.networkData.nodes.forEach(node => {
+                    if (node.category) {
+                        visibleCategories.add(node.category);
+                    }
+                });
+
+                if (visibleCategories.size > 0 && visibleCategories.size <= 15) {
+                    const categorySection = document.createElement('div');
+                    categorySection.className = 'legend-section';
+                    categorySection.innerHTML = '<div class="legend-title">Categories</div>';
+
+                    Array.from(visibleCategories).sort().forEach(category => {
+                        const item = document.createElement('div');
+                        item.className = 'legend-item';
+                        item.innerHTML = `
+                            <div class="legend-color" style="background: ${this.colorScheme.categories[category] || '#95a5a6'};"></div>
+                            <span>${category}</span>
+                        `;
+                        categorySection.appendChild(item);
+                    });
+
+                    legend.appendChild(categorySection);
+                }
+
+                // Link types section
+                const linkSection = document.createElement('div');
+                linkSection.className = 'legend-section';
+                linkSection.innerHTML = '<div class="legend-title">Relationships</div>';
+
+                const linkTypes = [
+                    { type: 'hierarchy', label: 'Hierarchy', color: '#999' },
+                    { type: 'family', label: 'Family', color: '#3498db' },
+                    { type: 'spatial', label: 'Spatial', color: '#f39c12' },
+                    { type: 'system', label: 'System', color: '#2ecc71' },
+                    { type: 'host', label: 'Host', color: '#e74c3c' },
+                    { type: 'phase', label: 'Phase', color: '#9b59b6' }
+                ];
+
+                linkTypes.forEach(({ type, label, color }) => {
+                    if (this.activeRelationships.has(type) || type === 'hierarchy') {
+                        const item = document.createElement('div');
+                        item.className = 'legend-item';
+                        item.innerHTML = `
+                            <div class="legend-line" style="background: ${color};"></div>
+                            <span>${label}</span>
+                        `;
+                        linkSection.appendChild(item);
+                    }
+                });
+
+                legend.appendChild(linkSection);
+            }
+
+            updateAnalysis() {
+                const analysisGrid = document.getElementById('analysisGrid');
+                analysisGrid.innerHTML = '';
+
+                // Category distribution
+                const categoryAnalysis = document.createElement('div');
+                categoryAnalysis.className = 'analysis-item';
+                categoryAnalysis.innerHTML = `
+                    <div class="analysis-title">Top Categories</div>
+                    <div class="analysis-content">
+                        ${Array.from(this.categoryMap.entries())
+                        .sort((a, b) => b[1].size - a[1].size)
+                        .slice(0, 5)
+                        .map(([cat, elems]) => `${cat}: ${elems.size}`)
+                        .join('<br>')}
+                    </div>
+                `;
+                analysisGrid.appendChild(categoryAnalysis);
+
+                // Level distribution
+                const levelAnalysis = document.createElement('div');
+                levelAnalysis.className = 'analysis-item';
+                levelAnalysis.innerHTML = `
+                    <div class="analysis-title">Level Distribution</div>
+                    <div class="analysis-content">
+                        ${Array.from(this.levelMap.entries())
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([level, elems]) => `${level}: ${elems.size} elements`)
+                        .join('<br>')}
+                    </div>
+                `;
+                analysisGrid.appendChild(levelAnalysis);
+
+                // Family analysis
+                const familyAnalysis = document.createElement('div');
+                familyAnalysis.className = 'analysis-item';
+                const avgTypesPerFamily = this.familyMap.size > 0 ?
+                    Array.from(this.familyMap.values()).reduce((sum, f) => sum + f.types.size, 0) / this.familyMap.size : 0;
+
+                familyAnalysis.innerHTML = `
+                    <div class="analysis-title">Family Statistics</div>
+                    <div class="analysis-content">
+                        Total Families: ${this.familyMap.size}<br>
+                        Avg Types/Family: ${avgTypesPerFamily.toFixed(1)}<br>
+                        Largest Family: ${Array.from(this.familyMap.entries())
+                        .sort((a, b) => b[1].elements.size - a[1].elements.size)[0]?.[0] || 'N/A'}
+                    </div>
+                `;
+                analysisGrid.appendChild(familyAnalysis);
+
+                // System analysis
+                const systemAnalysis = document.createElement('div');
+                systemAnalysis.className = 'analysis-item';
+                systemAnalysis.innerHTML = `
+                    <div class="analysis-title">System Analysis</div>
+                    <div class="analysis-content">
+                        Total Systems: ${this.systemMap.size}<br>
+                        Host Elements: ${this.hostMap.size}<br>
+                        Construction Phases: ${this.phaseMap.size}
+                    </div>
+                `;
+                analysisGrid.appendChild(systemAnalysis);
+
+                // Network metrics
+                const networkAnalysis = document.createElement('div');
+                networkAnalysis.className = 'analysis-item';
+                const avgConnections = this.networkData.links.length / Math.max(this.networkData.nodes.length, 1);
+                networkAnalysis.innerHTML = `
+                    <div class="analysis-title">Network Metrics</div>
+                    <div class="analysis-content">
+                        Nodes: ${this.networkData.nodes.length}<br>
+                        Edges: ${this.networkData.links.length}<br>
+                        Avg Connections: ${avgConnections.toFixed(2)}
+                    </div>
+                `;
+                analysisGrid.appendChild(networkAnalysis);
+            }
+
+            searchNodes(query) {
+                if (!query) {
+                    d3.selectAll('.nodes circle').style('opacity', 1);
+                    return;
+                }
+
+                const lowerQuery = query.toLowerCase();
+                d3.selectAll('.nodes circle').style('opacity', function (d) {
+                    const matches = d.label.toLowerCase().includes(lowerQuery) ||
+                        (d.type && d.type.toLowerCase().includes(lowerQuery)) ||
+                        (d.category && d.category.toLowerCase().includes(lowerQuery));
+                    return matches ? 1 : 0.2;
+                });
+            }
+
+            focusOnNode(node) {
+                const scale = 2;
+                const x = -node.x * scale + this.width / 2;
+                const y = -node.y * scale + this.height / 2;
+
+                this.svg.transition().duration(750).call(
+                    this.zoom.transform,
+                    d3.zoomIdentity.translate(x, y).scale(scale)
+                );
+            }
+
+            dragstarted(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            dragended(event, d) {
+                if (!event.active) this.simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            resetView() {
+                if (this.svg && this.zoom) {
+                    this.svg.transition().duration(750).call(
+                        this.zoom.transform,
+                        d3.zoomIdentity
+                    );
+                }
+            }
+
+            exportNetworkData() {
+                const exportData = {
+                    metadata: {
+                        source: this.currentMode === 'sample' ? 'Sample Data' : 'User Upload',
+                        totalElements: this.elementMap.size,
+                        exportDate: new Date().toISOString(),
+                        viewMode: document.getElementById('viewMode').value
+                    },
+                    statistics: {
+                        categories: Object.fromEntries(
+                            Array.from(this.categoryMap.entries())
+                                .map(([cat, elems]) => [cat, elems.size])
+                        ),
+                        families: this.familyMap.size,
+                        levels: this.levelMap.size,
+                        systems: this.systemMap.size,
+                        phases: this.phaseMap.size
+                    },
+                    network: {
+                        nodes: this.networkData.nodes.map(n => ({
+                            id: n.id,
+                            label: n.label,
+                            type: n.type,
+                            level: n.level,
+                            count: n.count,
+                            category: n.category
+                        })),
+                        links: this.networkData.links.map(l => ({
+                            source: l.source.id || l.source,
+                            target: l.target.id || l.target,
+                            type: l.type
+                        }))
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `revit_network_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            showProcessing(show) {
+                document.getElementById('processing').style.display = show ? 'block' : 'none';
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').style.display = 'none';
+            }
+        }
+
+        // Initialize analyzer
+        let csvAnalyzer;
+
+        // Global functions for mode switching
+        function setMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (mode === 'sample') {
+                document.getElementById('sampleNotice').style.display = 'block';
+                document.getElementById('uploadSection').style.display = 'none';
+                if (!csvAnalyzer) {
+                    csvAnalyzer = new RevitCSVAnalyzer();
+                } else {
+                    csvAnalyzer.currentMode = 'sample';
+                    csvAnalyzer.loadSampleData();
+                }
+            } else {
+                document.getElementById('sampleNotice').style.display = 'none';
+                document.getElementById('uploadSection').style.display = 'block';
+                if (csvAnalyzer) {
+                    csvAnalyzer.currentMode = 'upload';
+                }
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            csvAnalyzer = new RevitCSVAnalyzer();
+        });
+    </script>
+</body>
+
+</html>
