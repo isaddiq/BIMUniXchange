@@ -1,482 +1,904 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <!-- Enhanced SEO Meta Tags for Google Search -->
-    <meta name="title" content="BIM Network Diagram: IFC and CSV Metadata Visualization and Comparison">
-    <meta name="description" content="Visualize and compare Building Information Modeling (BIM) metadata using interactive network diagrams derived from IFC and CSV files. Understand semantic structures in Revit and ArchiCAD models for advanced construction informatics.">
-    <meta name="keywords" content="BIM network diagram, BIM metadata, IFC data visualization, CSV BIM metadata, Revit IFC, ArchiCAD CSV export, semantic BIM, BIM semantic structure, BIM data graph, metadata graph visualization, BIM knowledge graph, construction informatics, BIM data comparison, IFC vs CSV, Revit data extraction, ArchiCAD BIM model, semantic web BIM, building data visualization, BIM data analysis, BIM graph theory, Revit plugin, BIMUniXchange, ReUniXchange, BIM interoperability, BIM model hierarchy, BIM ontology, BIM for XR, XR metadata BIM, BIM metadata in Unity, building information modeling data, BIM structure mapping, BIM metadata enrichment, BIM semantic mapping, IFC schema graph, BIM logic network, BIM element relationships, BIM property graph, CSV network graph, BIM data pipeline, BIM visualization tool, construction data science, digital twin metadata, BIM classification system, openBIM visualization, BIM data web app, BIM 3D metadata, BIM object graph, semantic IFC viewer, BIM RDF graph, BIM real-time graph, BIM for AI analysis">
-    <meta name="author" content="Your Name or GitHub Username">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Open Graph Tags for Social Sharing -->
-    <meta property="og:title" content="BIM Network Diagram: Visualize IFC and CSV Metadata">
-    <meta property="og:description" content="Compare and visualize BIM metadata using graph-based approaches for IFC and CSV exports from Revit and ArchiCAD.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://your-github-username.github.io/your-repo-name/">
-    <meta property="og:image" content="https://your-github-username.github.io/your-repo-name/images/preview.png">
-    
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="BIM Metadata Graph Viewer – IFC and CSV Network Diagrams">
-    <meta name="twitter:description" content="Semantic visualization of BIM data using IFC and CSV formats. Supports Revit, ArchiCAD, and XR integration.">
-    <meta name="twitter:image" content="https://your-github-username.github.io/your-repo-name/images/preview.png">
 
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BIM Network Diagram Tools | AEC Data Visualization</title>
-    <meta name="google-site-verification" content="yzcW9S9oDsmoPblbR_GHDVR1slEIiFysrIcodJ-4ZRw" />
-    <meta
-      name="description"
-      content="Professional Building Information Modeling network diagram tools for ArchiCAD, Revit, and IFC data visualization"
-    />
-    <meta
-      name="keywords"
-      content="BIM, ArchiCAD, Revit, IFC, network diagram, building information modeling, AEC, construction technology"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIM Network Diagram Tools | AEC Data Visualization</title>
+  <meta name="description"
+    content="Professional Building Information Modeling network diagram tools for ArchiCAD, Revit, and IFC data visualization" />
+  <meta name="keywords"
+    content="BIM, ArchiCAD, Revit, IFC, network diagram, building information modeling, AEC, construction technology" />
 
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .background-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8f0f7 100%);
+      perspective: 1000px;
+    }
+
+    .bim-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.6;
+    }
+
+    .floating-bim-elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform-style: preserve-3d;
+    }
+
+    .bim-element {
+      position: absolute;
+      transform-style: preserve-3d;
+      animation: float3D 20s linear infinite;
+    }
+
+    .building-block {
+      width: 40px;
+      height: 60px;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      opacity: 0.3;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+      transform-style: preserve-3d;
+      border-radius: 4px;
+    }
+
+    .building-block::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: 0;
+      width: 40px;
+      height: 20px;
+      background: linear-gradient(45deg, #7b8ff5, #8a5fc7);
+      transform: rotateX(90deg);
+      transform-origin: bottom;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .building-block::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -20px;
+      width: 20px;
+      height: 60px;
+      background: linear-gradient(45deg, #5a6fd8, #6a42a0);
+      transform: rotateY(90deg);
+      transform-origin: left;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .ifc-node {
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #ff6b6b, #ff5252);
+      border-radius: 50%;
+      opacity: 0.4;
+      box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+    }
+
+    .connection-line {
+      width: 100px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.4), transparent);
+      transform-origin: left;
+    }
+
+    @keyframes float3D {
+      0% {
+        transform: translateY(100vh) translateX(0px) rotateX(0deg) rotateY(0deg);
+        opacity: 0;
       }
 
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        color: #333;
-        line-height: 1.6;
+      10% {
+        opacity: 0.6;
       }
 
+      50% {
+        transform: translateY(50vh) translateX(100px) rotateX(180deg) rotateY(180deg);
+      }
+
+      90% {
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translateY(-100px) translateX(200px) rotateX(360deg) rotateY(360deg);
+        opacity: 0;
+      }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 3rem;
+      animation: fadeInDown 1s ease-out;
+    }
+
+    .header h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.8;
+      max-width: 600px;
+      margin: 0 auto;
+      color: #546e7a;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .tool-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 1s ease-out;
+      border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .tool-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .tool-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    /* ArchiCAD Logo */
+    .archicad-logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      position: relative;
+      box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+    }
+
+    .archicad-logo::before {
+      content: '';
+      width: 30px;
+      height: 30px;
+      background: white;
+      border-radius: 4px;
+      position: relative;
+      transform: rotate(45deg);
+    }
+
+    .archicad-logo::after {
+      content: 'AC';
+      position: absolute;
+      color: #ff6b35;
+      font-weight: bold;
+      font-size: 14px;
+      z-index: 1;
+    }
+
+    /* Revit Logo */
+    .revit-logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0078d4, #106ebe);
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0, 120, 212, 0.3);
+    }
+
+    .revit-logo::before {
+      content: '';
+      width: 24px;
+      height: 32px;
+      background: white;
+      border-radius: 2px;
+      position: relative;
+      clip-path: polygon(0 0, 70% 0, 100% 30%, 100% 100%, 30% 100%, 0 70%);
+    }
+
+    .revit-logo::after {
+      content: 'R';
+      position: absolute;
+      color: #0078d4;
+      font-weight: bold;
+      font-size: 18px;
+      z-index: 1;
+    }
+
+    /* IFC Logo */
+    .ifc-logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      position: relative;
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .ifc-logo::before {
+      content: '';
+      width: 32px;
+      height: 32px;
+      border: 3px solid white;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .ifc-logo::after {
+      content: 'IFC';
+      position: absolute;
+      color: white;
+      font-weight: bold;
+      font-size: 11px;
+      z-index: 1;
+    }
+
+    .tool-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+
+    .tool-card p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .tool-features {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .tool-features li {
+      padding: 0.5rem 0;
+      color: #555;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    .tool-features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #27ae60;
+      font-weight: bold;
+    }
+
+    .launch-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-align: center;
+      width: 100%;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .launch-btn:hover {
+      background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .footer {
+      text-align: center;
+      color: #546e7a;
+      opacity: 0.8;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(84, 110, 122, 0.2);
+    }
+
+    .github-link {
+      color: #546e7a;
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s ease;
+    }
+
+    .github-link:hover {
+      border-bottom-color: #546e7a;
+    }
+
+    .flag-counter {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tool-card:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .tool-card:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .tool-card:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    @media (max-width: 768px) {
       .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-      }
-
-      .header {
-        text-align: center;
-        color: white;
-        margin-bottom: 3rem;
-        animation: fadeInDown 1s ease-out;
+        padding: 1rem;
       }
 
       .header h1 {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .header p {
-        font-size: 1.2rem;
-        opacity: 0.9;
-        max-width: 600px;
-        margin: 0 auto;
+        font-size: 2rem;
       }
 
       .tools-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 3rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
       }
 
       .tool-card {
-        background: white;
-        border-radius: 15px;
-        padding: 2rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        animation: fadeInUp 1s ease-out;
+        padding: 1.5rem;
+      }
+    }
+
+    .info-section {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+      color: #2c3e50;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-section h2 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      color: #2c3e50;
+    }
+
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .workflow-step {
+      background: rgba(102, 126, 234, 0.1);
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .workflow-step:hover {
+      background: rgba(102, 126, 234, 0.15);
+      transform: translateY(-3px);
+    }
+
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 50%;
+      line-height: 30px;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .isometric-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.1;
+      background-image:
+        linear-gradient(30deg, rgba(102, 126, 234, 0.3) 1px, transparent 1px),
+        linear-gradient(-30deg, rgba(102, 126, 234, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 126, 234, 0.3) 1px, transparent 1px);
+      background-size: 60px 60px, 60px 60px, 60px 60px;
+      animation: gridMove3D 25s linear infinite;
+    }
+
+    @keyframes gridMove3D {
+      0% {
+        transform: translate(0, 0) rotateX(0deg);
       }
 
-      .tool-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      100% {
+        transform: translate(60px, 60px) rotateX(360deg);
       }
+    }
+  </style>
+</head>
 
-      .tool-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-      }
+<body>
+  <div class="background-animation">
+    <div class="isometric-grid"></div>
+    <canvas class="bim-canvas" id="bimCanvas"></canvas>
+    <div class="floating-bim-elements" id="floatingBimElements"></div>
+  </div>
 
-      .tool-icon {
-        width: 64px;
-        height: 64px;
-        margin-bottom: 1.5rem;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 2rem;
-        font-weight: bold;
-      }
+  <div class="container">
+    <header class="header">
+      <h1>BIM Network Diagram Tools</h1>
+      <p>
+        Professional data visualization solutions for Building Information
+        Modeling workflows. Transform your architectural and engineering data
+        into interactive network diagrams.
+      </p>
+    </header>
 
-      .tool-card h3 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: #2c3e50;
-      }
+    <section class="info-section">
+      <h2>About These Tools</h2>
+      <p>
+        These specialized applications are designed for AEC professionals who
+        need to visualize complex relationships within their BIM models. Each
+        tool processes CSV/IFC data exports (by ReUniXchange for Autodesk Revit and ArchUniXchange for ArchiCAD, and IFC
+        export as typical IFC from either BIM authoring tool) to create interactive network diagrams
+        that reveal connections, dependencies, and hierarchies in your
+        building information models.
+      </p>
 
-      .tool-card p {
-        color: #666;
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-      }
-
-      .tool-features {
-        list-style: none;
-        margin-bottom: 2rem;
-      }
-
-      .tool-features li {
-        padding: 0.5rem 0;
-        color: #555;
-        position: relative;
-        padding-left: 1.5rem;
-      }
-
-      .tool-features li::before {
-        content: "✓";
-        position: absolute;
-        left: 0;
-        color: #27ae60;
-        font-weight: bold;
-      }
-
-      .launch-btn {
-        display: inline-block;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        text-decoration: none;
-        padding: 0.8rem 2rem;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        text-align: center;
-        width: 100%;
-      }
-
-      .launch-btn:hover {
-        background: linear-gradient(135deg, #5a6fd8, #6a42a0);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      }
-
-      .footer {
-        text-align: center;
-        color: white;
-        opacity: 0.8;
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .github-link {
-        color: white;
-        text-decoration: none;
-        font-weight: 500;
-        border-bottom: 1px solid transparent;
-        transition: border-color 0.3s ease;
-      }
-
-      .github-link:hover {
-        border-bottom-color: white;
-      }
-
-      @keyframes fadeInDown {
-        from {
-          opacity: 0;
-          transform: translateY(-30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .tool-card:nth-child(1) {
-        animation-delay: 0.1s;
-      }
-      .tool-card:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-      .tool-card:nth-child(3) {
-        animation-delay: 0.3s;
-      }
-
-      @media (max-width: 768px) {
-        .container {
-          padding: 1rem;
-        }
-
-        .header h1 {
-          font-size: 2rem;
-        }
-
-        .tools-grid {
-          grid-template-columns: 1fr;
-          gap: 1.5rem;
-        }
-
-        .tool-card {
-          padding: 1.5rem;
-        }
-      }
-
-      .info-section {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 2rem;
-        margin-bottom: 3rem;
-        color: white;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .info-section h2 {
-        margin-bottom: 1rem;
-        font-size: 1.5rem;
-      }
-
-      .workflow-steps {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1.5rem;
-      }
-
-      .workflow-step {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .step-number {
-        display: inline-block;
-        width: 30px;
-        height: 30px;
-        background: white;
-        color: #667eea;
-        border-radius: 50%;
-        line-height: 30px;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <header class="header">
-        <h1>BIM Network Diagram Tools</h1>
-        <p>
-          Professional data visualization solutions for Building Information
-          Modeling workflows. Transform your architectural and engineering data
-          into interactive network diagrams.
-        </p>
-      </header>
-
-      <section class="info-section">
-        <h2>About These Tools</h2>
-        <p>
-          These specialized applications are designed for AEC professionals who
-          need to visualize complex relationships within their BIM models. Each
-          tool processes CSV/IFC data exports (by ReUniXchange for Autodesk Revit and ArchUniXchange for ArchiCAD, and IFC export as typical IFC from either BIM authoring tool) to create interactive network diagrams
-          that reveal connections, dependencies, and hierarchies in your
-          building information models.
-        </p>
-
-        <div class="workflow-steps">
-          <div class="workflow-step">
-            <div class="step-number">1</div>
-            <strong>Export Data</strong><br />
-            Export your model data as CSV/IFC from your BIM software using ReUniXchange or ArchUniXchange
-          </div>
-          <div class="workflow-step">
-            <div class="step-number">2</div>
-            <strong>Choose Tool</strong><br />
-            Select the appropriate visualization tool below
-          </div>
-          <div class="workflow-step">
-            <div class="step-number">3</div>
-            <strong>Upload CSV/IFC</strong><br />
-            Import your CSV/IFC data into the selected tool
-          </div>
-          <div class="workflow-step">
-            <div class="step-number">4</div>
-            <strong>Visualize</strong><br />
-            Explore your interactive network diagram
-          </div>
+      <div class="workflow-steps">
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <strong>Export Data</strong><br />
+          Export your model data as CSV/IFC from your BIM software using ReUniXchange or ArchUniXchange
         </div>
-      </section>
-
-      <main class="tools-grid">
-        <div class="tool-card">
-          <div class="tool-icon">AC</div>
-          <h3>ArchiCAD Network Diagram</h3>
-          <p>
-            Specialized visualization tool for ArchiCAD project data. Designed
-            to handle ArchiCAD's unique element structure, zone relationships,
-            and building component hierarchies.
-          </p>
-
-          <ul class="tool-features">
-            <li>ArchiCAD element relationship mapping</li>
-            <li>Zone and space connectivity analysis</li>
-            <li>Building component hierarchy visualization</li>
-            <li>Layer and classification grouping</li>
-            <li>Material and property connections</li>
-          </ul>
-
-          <a href="src/ArchiCAD.html" class="launch-btn">
-            Launch ArchiCAD Tool
-          </a>
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <strong>Choose Tool</strong><br />
+          Select the appropriate visualization tool below
         </div>
-
-        <div class="tool-card">
-          <div class="tool-icon">RV</div>
-          <h3>Revit Network Diagram</h3>
-          <p>
-            Optimized for Revit model data visualization. Handles family
-            relationships, system connections, and parameter dependencies
-            specific to Autodesk Revit workflows.
-          </p>
-
-          <ul class="tool-features">
-            <li>Family and type relationship mapping</li>
-            <li>MEP system connectivity analysis</li>
-            <li>Parameter dependency visualization</li>
-            <li>Workset and phase grouping</li>
-            <li>Level and grid associations</li>
-          </ul>
-
-          <a href="src/Revit.html" class="launch-btn">
-            Launch Revit Tool
-          </a>
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <strong>Upload CSV/IFC</strong><br />
+          Import your CSV/IFC data into the selected tool
         </div>
-
-        <div class="tool-card">
-          <div class="tool-icon">IFC</div>
-          <h3>Universal IFC Network Diagram</h3>
-          <p>
-            Generic BIM data visualization tool that works with any
-            IFC-compliant software. Perfect for multi-platform projects and
-            standardized data analysis across different BIM applications.
-          </p>
-
-          <ul class="tool-features">
-            <li>IFC schema compliance</li>
-            <li>Universal BIM data support</li>
-            <li>Cross-platform compatibility</li>
-            <li>Standard entity relationships</li>
-            <li>Interoperability analysis</li>
-          </ul>
-
-          <a href="src/ifctograph.html" class="launch-btn"> Launch IFC Tool </a>
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <strong>Visualize</strong><br />
+          Explore your interactive network diagram
         </div>
-      </main>
+      </div>
+    </section>
 
-      <footer class="footer">
+    <main class="tools-grid">
+      <div class="tool-card">
+        <div class="archicad-logo"></div>
+        <h3>ArchiCAD Network Diagram</h3>
         <p>
-          Professional BIM Network Visualization Tools | Open Source Project
+          Specialized visualization tool for ArchiCAD project data. Designed
+          to handle ArchiCAD's unique element structure, zone relationships,
+          and building component hierarchies.
         </p>
+
+        <ul class="tool-features">
+          <li>ArchiCAD element relationship mapping</li>
+          <li>Zone and space connectivity analysis</li>
+          <li>Building component hierarchy visualization</li>
+          <li>Layer and classification grouping</li>
+          <li>Material and property connections</li>
+        </ul>
+
+        <a href="src/ArchiCAD.html" class="launch-btn">
+          Launch ArchiCAD Tool
+        </a>
+      </div>
+
+      <div class="tool-card">
+        <div class="revit-logo"></div>
+        <h3>Revit Network Diagram</h3>
         <p>
-          Built for the AEC industry •
-          <a href="https://github.com/isaddiq/BIMUniXchange" class="github-link">View on GitHub</a>
+          Optimized for Revit model data visualization. Handles family
+          relationships, system connections, and parameter dependencies
+          specific to Autodesk Revit workflows.
         </p>
+
+        <ul class="tool-features">
+          <li>Family and type relationship mapping</li>
+          <li>MEP system connectivity analysis</li>
+          <li>Parameter dependency visualization</li>
+          <li>Workset and phase grouping</li>
+          <li>Level and grid associations</li>
+        </ul>
+
+        <a href="src/Revit.html" class="launch-btn">
+          Launch Revit Tool
+        </a>
+      </div>
+
+      <div class="tool-card">
+        <div class="ifc-logo"></div>
+        <h3>Universal IFC Network Diagram</h3>
         <p>
-          Built for the AEC industry •
-          <a href="https://isaddiq.github.io" class="github-link">by Saddiq Ur Rehman</a>
+          Generic BIM data visualization tool that works with any
+          IFC-compliant software. Perfect for multi-platform projects and
+          standardized data analysis across different BIM applications.
         </p>
-      </footer>
-    </div>
 
-    <script>
-      // Add smooth scrolling for better UX
-      document.addEventListener("DOMContentLoaded", function () {
-        // Add loading animation complete class
-        document.body.classList.add("loaded");
+        <ul class="tool-features">
+          <li>IFC schema compliance</li>
+          <li>Universal BIM data support</li>
+          <li>Cross-platform compatibility</li>
+          <li>Standard entity relationships</li>
+          <li>Interoperability analysis</li>
+        </ul>
 
-        // Track tool usage (you can integrate with analytics)
-        const toolLinks = document.querySelectorAll(".launch-btn");
-        toolLinks.forEach((link) => {
-          link.addEventListener("click", function (e) {
-            const toolName = this.textContent.trim();
-            console.log(`Launching: ${toolName}`);
+        <a href="src/ifctograph.html" class="launch-btn"> Launch IFC Tool </a>
+      </div>
+    </main>
 
-            // Optional: Add loading state
-            this.style.opacity = "0.7";
-            this.textContent = "Loading...";
+    <footer class="footer">
+      <p>
+        Professional BIM Network Visualization Tools | Open Source Project
+      </p>
+      <p>
+        Built for the AEC industry •
+        <a href="https://github.com/isaddiq/BIMUniXchange" class="github-link">View on GitHub</a>
+      </p>
+      <p>
+        Built for the AEC industry •
+        <a href="https://isaddiq.github.io" class="github-link">by Saddiq Ur Rehman</a>
+      </p>
+      <div class="flag-counter">
+        <a href="https://info.flagcounter.com/nA4d"><img
+            src="https://s01.flagcounter.com/count2/nA4d/bg_FFFFFF/txt_000000/border_CCCCCC/columns_2/maxflags_10/viewers_0/labels_0/pageviews_0/flags_0/percent_0/"
+            alt="Flag Counter" border="0"></a>
+      </div>
+    </footer>
+  </div>
 
-            // Reset after a short delay (in case of back navigation)
-            setTimeout(() => {
-              this.style.opacity = "1";
-              this.textContent = toolName;
-            }, 3000);
-          });
-        });
+  <script>
+    // 3D BIM Canvas Animation
+    const canvas = document.getElementById('bimCanvas');
+    const ctx = canvas.getContext('2d');
 
-        // Add intersection observer for animation triggers
-        const observerOptions = {
-          threshold: 0.1,
-          rootMargin: "0px 0px -50px 0px",
-        };
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
 
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.style.animationPlayState = "running";
-            }
-          });
-        }, observerOptions);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-        // Observe all tool cards
-        document.querySelectorAll(".tool-card").forEach((card) => {
-          observer.observe(card);
+    const bimNodes = [];
+    const bimConnections = [];
+
+    class BIMNode {
+      constructor(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.vz = (Math.random() - 0.5) * 0.2;
+        this.size = Math.random() * 8 + 4;
+        this.opacity = Math.random() * 0.4 + 0.2;
+        this.type = Math.floor(Math.random() * 3); // 0: node, 1: building, 2: connection
+        this.rotationX = 0;
+        this.rotationY = 0;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+        this.rotationX += this.rotationSpeed;
+        this.rotationY += this.rotationSpeed * 0.7;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        if (this.z < -200 || this.z > 200) this.vz *= -1;
+      }
+
+      draw() {
+        const perspective = 400 / (400 + this.z);
+        const projectedX = this.x * perspective;
+        const projectedY = this.y * perspective;
+        const projectedSize = this.size * perspective;
+
+        ctx.save();
+        ctx.translate(projectedX, projectedY);
+
+        if (this.type === 0) {
+          // IFC Node
+          ctx.beginPath();
+          ctx.arc(0, 0, projectedSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 107, 107, ${this.opacity * perspective})`;
+          ctx.fill();
+          ctx.strokeStyle = `rgba(255, 82, 82, ${this.opacity * perspective * 1.5})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (this.type === 1) {
+          // Building Element
+          const width = projectedSize * 1.5;
+          const height = projectedSize * 2;
+
+          // Main building block
+          ctx.fillStyle = `rgba(102, 126, 234, ${this.opacity * perspective})`;
+          ctx.fillRect(-width / 2, -height / 2, width, height);
+
+          // 3D effect - top face
+          ctx.fillStyle = `rgba(123, 143, 245, ${this.opacity * perspective * 0.8})`;
+          ctx.beginPath();
+          ctx.moveTo(-width / 2, -height / 2);
+          ctx.lineTo(-width / 2 + width / 4, -height / 2 - height / 4);
+          ctx.lineTo(width / 2 + width / 4, -height / 2 - height / 4);
+          ctx.lineTo(width / 2, -height / 2);
+          ctx.closePath();
+          ctx.fill();
+
+          // 3D effect - side face
+          ctx.fillStyle = `rgba(90, 111, 216, ${this.opacity * perspective * 0.6})`;
+          ctx.beginPath();
+          ctx.moveTo(width / 2, -height / 2);
+          ctx.lineTo(width / 2 + width / 4, -height / 2 - height / 4);
+          ctx.lineTo(width / 2 + width / 4, height / 2 - height / 4);
+          ctx.lineTo(width / 2, height / 2);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // Connection Point
+          ctx.strokeStyle = `rgba(118, 75, 162, ${this.opacity * perspective})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-projectedSize, 0);
+          ctx.lineTo(projectedSize, 0);
+          ctx.moveTo(0, -projectedSize);
+          ctx.lineTo(0, projectedSize);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // Create 3D BIM nodes
+    for (let i = 0; i < 40; i++) {
+      bimNodes.push(new BIMNode(
+        Math.random() * canvas.width,
+        Math.random() * canvas.height,
+        Math.random() * 400 - 200
+      ));
+    }
+
+    function draw3DConnections() {
+      for (let i = 0; i < bimNodes.length; i++) {
+        for (let j = i + 1; j < bimNodes.length; j++) {
+          const dx = bimNodes[i].x - bimNodes[j].x;
+          const dy = bimNodes[i].y - bimNodes[j].y;
+          const dz = bimNodes[i].z - bimNodes[j].z;
+          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (distance < 180) {
+            const perspective1 = 400 / (400 + bimNodes[i].z);
+            const perspective2 = 400 / (400 + bimNodes[j].z);
+
+            ctx.beginPath();
+            ctx.moveTo(bimNodes[i].x * perspective1, bimNodes[i].y * perspective1);
+            ctx.lineTo(bimNodes[j].x * perspective2, bimNodes[j].y * perspective2);
+            ctx.strokeStyle = `rgba(102, 126, 234, ${0.1 * (1 - distance / 180) * Math.min(perspective1, perspective2)})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function animate3D() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sort nodes by z-depth for proper 3D rendering
+      bimNodes.sort((a, b) => b.z - a.z);
+
+      draw3DConnections();
+
+      bimNodes.forEach(node => {
+        node.update();
+        node.draw();
+      });
+
+      requestAnimationFrame(animate3D);
+    }
+
+    animate3D();
+
+    // Create floating 3D BIM elements
+    function createFloating3DBIMElements() {
+      const container = document.getElementById('floatingBimElements');
+
+      for (let i = 0; i < 25; i++) {
+        const element = document.createElement('div');
+        element.className = 'bim-element';
+
+        const elementType = Math.random();
+        if (elementType < 0.4) {
+          const building = document.createElement('div');
+          building.className = 'building-block';
+          element.appendChild(building);
+        } else if (elementType < 0.7) {
+          const node = document.createElement('div');
+          node.className = 'ifc-node';
+          element.appendChild(node);
+        } else {
+          const connection = document.createElement('div');
+          connection.className = 'connection-line';
+          element.appendChild(connection);
+        }
+
+        element.style.left = Math.random() * 100 + 'vw';
+        element.style.animationDelay = Math.random() * 20 + 's';
+        element.style.animationDuration = (15 + Math.random() * 10) + 's';
+        container.appendChild(element);
+      }
+    }
+
+    createFloating3DBIMElements();
+
+    // Existing functionality
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("loaded");
+
+      const toolLinks = document.querySelectorAll(".launch-btn");
+      toolLinks.forEach((link) => {
+        link.addEventListener("click", function (e) {
+          const toolName = this.textContent.trim();
+          console.log(`Launching: ${toolName}`);
+
+          this.style.opacity = "0.7";
+          this.textContent = "Loading...";
+
+          setTimeout(() => {
+            this.style.opacity = "1";
+            this.textContent = toolName;
+          }, 3000);
         });
       });
 
-      // Add error handling for navigation
-      window.addEventListener("error", function (e) {
-        console.error("Navigation error:", e);
-      });
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
 
-      // Optional: Add service worker registration for offline capability
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then((registration) => {
-              console.log("SW registered: ", registration);
-            })
-            .catch((registrationError) => {
-              console.log("SW registration failed: ", registrationError);
-            });
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = "running";
+          }
         });
-      }
-    </script>
-  </body>
+      }, observerOptions);
+
+      document.querySelectorAll(".tool-card").forEach((card) => {
+        observer.observe(card);
+      });
+    });
+
+    window.addEventListener("error", function (e) {
+      console.error("Navigation error:", e);
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("SW registered: ", registration);
+          })
+          .catch((registrationError) => {
+            console.log("SW registration failed: ", registrationError);
+          });
+      });
+    }
+  </script>
+</body>
+
 </html>
