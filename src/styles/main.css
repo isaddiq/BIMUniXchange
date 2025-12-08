@@ -11,7 +11,7 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 80%;
   background: #ffffff;
   border: 1px solid #1f2937;
   border-radius: 18px;
@@ -172,12 +172,20 @@ h1 {
   flex-wrap: wrap;
   gap: 20px;
   margin-bottom: 15px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .control-group {
   flex: 1;
   min-width: 200px;
+}
+
+/* Specific layout for filter controls - make them stack vertically */
+.control-row .control-group:nth-child(2),
+.control-row .control-group:nth-child(3) {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 250px;
 }
 
 label {
@@ -264,14 +272,16 @@ select option {
 }
 
 #network-container {
-  width: calc(100vw - 48px);
-  margin-left: calc(50% - 50vw + 24px);
+  width: 100%;
+  max-width: 80vw;
+  margin-left: auto;
+  margin-right: auto;
   min-height: 80vh;
   background: #ffffff;
   border-radius: 18px;
   border: 1px solid #1f2937;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
-  overflow: visible;
+  overflow: hidden;
   position: relative;
   margin-bottom: 20px;
   isolation: isolate;

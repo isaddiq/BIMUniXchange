@@ -85,18 +85,27 @@
               <option value="combined">Combined View</option>
             </select>
           </div>
-          <div class="control-group" style="flex: 1">
-            <label>Element Filter:</label>
-            <select id="elementFilter" multiple size="5">
-              <option value="all" selected>All Elements</option>
-            </select>
-          </div>
-          <div class="control-group" style="flex: 1">
-            <label>Style:</label>
-            <select id="styleMode">
-              <option value="default" selected>Default</option>
-              <option value="ifc">IFC Schema Style</option>
-            </select>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              min-width: 250px;
+            "
+          >
+            <div class="control-group">
+              <label>Element Filter:</label>
+              <select id="elementFilter" multiple size="5">
+                <option value="all" selected>All Elements</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Style:</label>
+              <select id="styleMode">
+                <option value="default" selected>Default</option>
+                <option value="ifc">IFC Schema Style</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1223,11 +1232,18 @@
           const container = d3.select("#network-container");
           const width = container.node().getBoundingClientRect().width;
           const height = Math.max(850, window.innerHeight * 0.8);
+          const padding = 40;
 
           const svg = container
             .append("svg")
             .attr("width", width)
-            .attr("height", height);
+            .attr("height", height)
+            .attr(
+              "viewBox",
+              `${-padding} ${-padding} ${width + padding * 2} ${
+                height + padding * 2
+              }`
+            );
 
           const g = svg.append("g");
 
