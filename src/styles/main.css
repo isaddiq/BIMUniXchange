@@ -1,0 +1,664 @@
+/* BIM UniXchange - Main Stylesheet */
+/* Consolidated styles for all HTML pages */
+
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: "Arial", sans-serif;
+  background: #ffffff;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  background: #ffffff;
+  border: 1px solid #1f2937;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 2.3em;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.mode-selector {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mode-btn {
+  background: #f8fafc;
+  border: 2px solid #1f2937;
+  color: #0f172a;
+  padding: 10px 20px;
+  margin: 0 10px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.mode-btn:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.mode-btn.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.upload-section {
+  display: none;
+  margin-bottom: 30px;
+}
+
+.upload-area {
+  border: 3px dashed #1f2937;
+  border-radius: 15px;
+  padding: 40px;
+  text-align: center;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.upload-area:not(.upload-section .upload-area) {
+  margin-bottom: 30px;
+}
+
+.upload-area:hover {
+  border-color: #0f172a;
+  background: #e2e8f0;
+}
+
+.upload-area.dragover {
+  border-color: #0f172a;
+  background: #e2e8f0;
+}
+
+#fileInput {
+  display: none;
+}
+
+.upload-text {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+.upload-subtext {
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 14px;
+  text-align: center;
+  margin: 6px;
+  min-width: 140px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+}
+
+/* IFC specific stat card styling */
+.ifc-page .stat-card {
+  background: #0f172a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  min-width: 120px;
+}
+
+.stat-number {
+  font-size: 1.9em;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+/* IFC specific stat number styling */
+.ifc-page .stat-number {
+  color: #22d3ee;
+}
+
+.stat-label {
+  font-size: 0.9em;
+  opacity: 0.9;
+  margin-top: 4px;
+  color: #0f172a;
+}
+
+/* IFC specific stat label styling */
+.ifc-page .stat-label {
+  opacity: 0.8;
+  color: #cbd5e1;
+}
+
+.controls {
+  margin-bottom: 20px;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 15px;
+  border: 1px solid #1f2937;
+  color: #0f172a;
+}
+
+/* IFC specific controls styling */
+.ifc-page .controls {
+  display: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 15px;
+  align-items: flex-end;
+}
+
+.control-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+select,
+input[type="range"],
+button {
+  background: #ffffff;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #0f172a;
+  width: 100%;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  width: auto;
+  padding: 10px 20px;
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+button:hover {
+  background: #111827;
+  transform: translateY(-1px);
+}
+
+/* ArchiCAD specific button hover */
+.archicad-page button:hover {
+  background: #111827;
+  border-color: #111827;
+  transform: translateY(-1px);
+}
+
+button.active {
+  background: #0f172a;
+  border-color: #0f172a;
+}
+
+select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* ArchiCAD specific select option styling */
+.archicad-page select option {
+  background: #333;
+  color: white;
+}
+
+.relationship-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.toggle-btn {
+  padding: 8px 15px;
+  font-size: 0.85em;
+  border-radius: 20px;
+}
+
+.toggle-btn.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+/* ArchiCAD specific toggle button active state */
+.archicad-page .toggle-btn.active {
+  background: rgba(255, 215, 0, 0.4);
+  border-color: #ffd700;
+}
+
+#network-container {
+  width: calc(100vw - 48px);
+  margin-left: calc(50% - 50vw + 24px);
+  min-height: 80vh;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
+  overflow: visible;
+  position: relative;
+  margin-bottom: 20px;
+  isolation: isolate;
+  color: #0f172a;
+}
+
+/* IFC specific network container styling */
+.ifc-page #network-container {
+  display: none;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+
+.graph-controls button {
+  background: #0f172a;
+  border: 1px solid #0f172a;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.graph-controls button:hover {
+  background: #111827;
+  border-color: #111827;
+  transform: translateY(-1px);
+}
+
+.tooltip {
+  position: absolute;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  border-radius: 8px;
+  pointer-events: none;
+  font-size: 12px;
+  max-width: 350px;
+  z-index: 1000;
+  border: 1px solid #1f2937;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* IFC specific tooltip styling */
+.ifc-page .tooltip {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  max-width: 300px;
+  box-shadow: none;
+}
+
+.tooltip-row {
+  margin: 2px 0;
+}
+
+.tooltip-label {
+  font-weight: bold;
+  color: #4fc3f7;
+}
+
+.tooltip-value {
+  color: #ffd700;
+}
+
+.legend {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 12px;
+  border: 1px solid #1f2937;
+  color: #f8fafc;
+  max-height: none;
+  overflow-y: visible;
+  max-width: 250px;
+}
+
+.legend-section {
+  margin-bottom: 15px;
+}
+
+.legend-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #f8fafc;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+  font-size: 11px;
+}
+
+/* IFC specific legend item sizing */
+.ifc-page .legend-item {
+  font-size: 12px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.legend-line {
+  width: 20px;
+  height: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.processing {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2em;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #ffd700;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.element-analysis {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 20px;
+  border: 1px solid #1f2937;
+  color: #0f172a;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.analysis-item {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #0f172a;
+}
+
+.analysis-title {
+  font-weight: bold;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.analysis-content {
+  font-size: 0.92em;
+  color: #cbd5e1;
+}
+
+/* ArchiCAD specific analysis content color */
+.archicad-page .analysis-content {
+  color: #0f172a;
+}
+
+.error-message {
+  background: rgba(255, 0, 0, 0.2);
+  border: 1px solid rgba(255, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  color: #ffcccb;
+  display: none;
+}
+
+/* IFC specific error message styling */
+.ifc-page .error-message {
+  display: block;
+}
+
+#zoom-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #0f172a;
+  border: 1px solid #1f2937;
+}
+
+.sample-notice {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.node-search {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+}
+
+.search-input {
+  background: #ffffff;
+  border: 1px solid #1f2937;
+  border-radius: 5px;
+  padding: 5px 10px;
+  color: #0f172a;
+  width: 200px;
+}
+
+.search-input::placeholder {
+  color: #475569;
+}
+
+.hierarchy-info {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 20px;
+  border: 1px solid #1f2937;
+  color: #0f172a;
+}
+
+.hierarchy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.hierarchy-item {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hierarchy-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.hierarchy-label {
+  font-weight: bold;
+  color: #4fc3f7;
+}
+
+.hierarchy-value {
+  color: #ffd700;
+  font-size: 1.1em;
+  margin-top: 5px;
+}
+
+/* IFC specific styles */
+.ifc-info {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 20px;
+  display: none;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.info-item {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #1f2937;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-height: 100%;
+  color: #0f172a;
+}
+
+.info-item:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+}
+
+.info-label {
+  font-weight: bold;
+  color: #0f172a;
+}
+
+.info-value {
+  color: #0f172a;
+  font-size: 1.05em;
+  margin-top: 5px;
+  display: block;
+  word-break: break-word;
+}
+
+.hierarchy-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hierarchy-btn {
+  flex: 1;
+  min-width: 150px;
+  text-align: center;
+}
+
+.element-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.category-btn {
+  padding: 8px 15px;
+  font-size: 0.85em;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.filter-tag {
+  background: rgba(255, 215, 0, 0.3);
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-tag button {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: 16px;
+}
