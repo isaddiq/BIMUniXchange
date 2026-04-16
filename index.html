@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BIMUniXchange — BIM Network Visualization Tools</title>
+    <meta
+      name="description"
+      content="Transform IFC files and Revit/ArchiCAD CSV exports into interactive 2D and 3D network graphs. Open-source BIM visualization tools for AEC professionals."
+    />
+    <meta
+      name="keywords"
+      content="BIM, IFC, Revit, ArchiCAD, network graph, visualization, AEC, building information modeling"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f8fafc;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --text: #0f172a;
+        --text-secondary: #64748b;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-bg: #eff6ff;
+        --radius: 8px;
+        --radius-lg: 12px;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      /* ── Navigation ─────────────────────────────────── */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-inner {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .nav-logo {
+        font-weight: 700;
+        font-size: 0.9375rem;
+        color: var(--text);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .nav-link {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: var(--radius);
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+
+      .nav-link:hover {
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .nav-link.github {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--text);
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .nav-link.github:hover {
+        background: #1e293b;
+      }
+
+      /* ── Page wrap ───────────────────────────────────── */
+      .page-wrap {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ── Hero ────────────────────────────────────────── */
+      .hero {
+        padding: 80px 0 64px;
+        text-align: center;
+      }
+
+      .hero-kicker {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-bg);
+        padding: 4px 12px;
+        border-radius: 999px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(37, 99, 235, 0.15);
+      }
+
+      .hero h1 {
+        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        line-height: 1.1;
+        color: var(--text);
+        max-width: 680px;
+        margin: 0 auto 16px;
+      }
+
+      .hero-sub {
+        font-size: 1.0625rem;
+        color: var(--text-secondary);
+        max-width: 520px;
+        margin: 0 auto 36px;
+        line-height: 1.65;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        padding: 10px 22px;
+        border-radius: var(--radius);
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+        font-family: inherit;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+      }
+
+      .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.9375rem;
+        padding: 10px 22px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-strong);
+        text-decoration: none;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          transform 0.1s;
+        font-family: inherit;
+      }
+
+      .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      /* ── Compat row ──────────────────────────────────── */
+      .compat-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 44px;
+        flex-wrap: wrap;
+      }
+
+      .compat-divider {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+      }
+
+      .compat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+
+      .compat-logos {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .compat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .compat-item img {
+        height: 26px;
+        width: auto;
+        object-fit: contain;
+      }
+
+      /* ── Section layout ──────────────────────────────── */
+      .section {
+        padding: 64px 0;
+        border-top: 1px solid var(--border);
+      }
+
+      .section-header {
+        margin-bottom: 40px;
+      }
+
+      .section-header h2 {
+        font-size: 1.625rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: var(--text);
+      }
+
+      .section-header p {
+        color: var(--text-secondary);
+        margin-top: 6px;
+        font-size: 0.9375rem;
+      }
+
+      /* ── Tool cards ──────────────────────────────────── */
+      .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
+
+      .tool-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          transform 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .tool-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .tool-card:hover {
+        border-color: var(--border-strong);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-3px);
+      }
+
+      .tool-card:hover::before {
+        opacity: 1;
+      }
+
+      .tool-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .tool-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      .tool-card-title {
+        flex: 1;
+      }
+
+      .tool-card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.3;
+      }
+
+      .tool-badge {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--surface);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        margin-top: 4px;
+        display: inline-block;
+      }
+
+      .tool-card p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.65;
+        margin-bottom: 20px;
+      }
+
+      .tool-features {
+        list-style: none;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex: 1;
+      }
+
+      .tool-features li {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        line-height: 1.5;
+      }
+
+      .tool-features li::before {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-top: 8px;
+        flex-shrink: 0;
+      }
+
+      .tool-launch {
+        display: block;
+        text-align: center;
+        background: var(--text);
+        color: #fff;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.875rem;
+        padding: 10px 16px;
+        border-radius: var(--radius);
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+        border: none;
+        cursor: pointer;
+      }
+
+      .tool-launch:hover {
+        background: #1e293b;
+        transform: translateY(-1px);
+      }
+
+      /* ── How it works ────────────────────────────────── */
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 28px;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .step-num {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        color: #fff;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .step h4 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .step p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.65;
+      }
+
+      /* ── Footer ──────────────────────────────────────── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 32px 0;
+        margin-top: 0;
+      }
+
+      .footer-inner {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .footer-copy {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 20px;
+      }
+
+      .footer-link {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+
+      .footer-link:hover {
+        color: var(--text);
+      }
+
+      /* ── Visitor counter floating button ─────────────── */
+      #visitorBtn {
+        position: fixed;
+        right: 20px;
+        bottom: 24px;
+        z-index: 200;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--text);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+        transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+        font-size: 1.1rem;
+      }
+
+      #visitorBtn:hover {
+        background: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      }
+
+      #visitorBtn[aria-expanded="true"] {
+        background: var(--accent);
+      }
+
+      #visitorPopup {
+        position: fixed;
+        right: 20px;
+        bottom: 78px;
+        z-index: 199;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        padding: 16px;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-width: 200px;
+        transform-origin: bottom right;
+        animation: popup-in 0.18s ease;
+      }
+
+      @keyframes popup-in {
+        from { opacity: 0; transform: scale(0.9) translateY(8px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+      }
+
+      #visitorPopup.open {
+        display: flex;
+      }
+
+      .popup-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-secondary);
+        align-self: flex-start;
+      }
+
+      #visitorPopup img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+      }
+
+      /* ── Responsive ──────────────────────────────────── */
+      @media (max-width: 640px) {
+        .hero {
+          padding: 48px 0 40px;
+        }
+
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .tools-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-inner {
+          flex-direction: column;
+          gap: 8px;
+          text-align: center;
+        }
+
+        .compat-row {
+          flex-direction: column;
+          gap: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav>
+      <div class="nav-inner">
+        <a href="index.html" class="nav-logo">BIMUniXchange</a>
+        <div class="nav-links">
+          <a href="#tools" class="nav-link">Tools</a>
+          <a href="#how-it-works" class="nav-link">How it works</a>
+          <a
+            href="https://github.com/isaddiq/BIMUniXchange"
+            class="nav-link github"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-wrap">
+      <!-- Hero -->
+      <section class="hero">
+        <span class="hero-kicker">Open Source · AEC Tools</span>
+        <h1>Network graphs for BIM data</h1>
+        <p class="hero-sub">
+          Turn IFC files and CSV exports from Revit and ArchiCAD into
+          interactive 2D and 3D network diagrams. Explore element relationships,
+          zoom, filter, and export.
+        </p>
+        <div class="hero-actions">
+          <a href="#tools" class="btn-primary">Get started</a>
+          <a
+            href="https://github.com/isaddiq/BIMUniXchange"
+            class="btn-outline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+        <div class="compat-row">
+          <span class="compat-label">Works with</span>
+          <div class="compat-divider"></div>
+          <div class="compat-logos">
+            <div class="compat-item">
+              <img src="src/images/Revit.png" alt="Revit" />
+              Revit
+            </div>
+            <div class="compat-item">
+              <img src="src/images/Archicad.png" alt="ArchiCAD" />
+              ArchiCAD
+            </div>
+            <div class="compat-item">
+              <img src="src/images/ifc.png" alt="IFC" />
+              IFC
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tools -->
+      <section class="section" id="tools">
+        <div class="section-header">
+          <h2>Choose your tool</h2>
+          <p>Select the analyzer that matches your BIM export format.</p>
+        </div>
+        <div class="tools-grid">
+          <!-- Revit -->
+          <div class="tool-card">
+            <div class="tool-card-header">
+              <img src="src/images/Revit.png" alt="Revit" class="tool-logo" />
+              <div class="tool-card-title">
+                <h3>Revit CSV Analyzer</h3>
+                <span class="tool-badge">CSV Export</span>
+              </div>
+            </div>
+            <p>
+              Visualize Revit model relationships from CSV exports. Explore
+              category hierarchies, family structures, MEP systems, levels,
+              phases, and host relationships.
+            </p>
+            <ul class="tool-features">
+              <li>Category and family hierarchy</li>
+              <li>MEP system connectivity</li>
+              <li>Level and spatial views</li>
+              <li>Phase timeline analysis</li>
+              <li>Host relationship mapping</li>
+            </ul>
+            <a href="src/Revit.html" class="tool-launch">Launch Revit Tool</a>
+          </div>
+
+          <!-- ArchiCAD -->
+          <div class="tool-card">
+            <div class="tool-card-header">
+              <img
+                src="src/images/Archicad.png"
+                alt="ArchiCAD"
+                class="tool-logo"
+              />
+              <div class="tool-card-title">
+                <h3>ArchiCAD CSV Analyzer</h3>
+                <span class="tool-badge">CSV Export</span>
+              </div>
+            </div>
+            <p>
+              Explore ArchiCAD model data from CSV exports. Map zones,
+              materials, classifications, and spatial relationships between
+              building elements.
+            </p>
+            <ul class="tool-features">
+              <li>Element type hierarchy</li>
+              <li>Zone and space connectivity</li>
+              <li>Material relationship mapping</li>
+              <li>Classification structure</li>
+              <li>Hotlink analysis</li>
+            </ul>
+            <a href="src/ArchiCAD.html" class="tool-launch"
+              >Launch ArchiCAD Tool</a
+            >
+          </div>
+
+          <!-- IFC -->
+          <div class="tool-card">
+            <div class="tool-card-header">
+              <img src="src/images/ifc.png" alt="IFC" class="tool-logo" />
+              <div class="tool-card-title">
+                <h3>IFC Network Analyzer</h3>
+                <span class="tool-badge">IFC File</span>
+              </div>
+            </div>
+            <p>
+              Parse and visualize any IFC file. Build element, spatial, system,
+              and property-set graphs from any compliant BIM model — no software
+              lock-in.
+            </p>
+            <ul class="tool-features">
+              <li>IFC schema compliance</li>
+              <li>Spatial structure hierarchy</li>
+              <li>System and MEP networks</li>
+              <li>Property set relationships</li>
+              <li>Cross-platform IFC support</li>
+            </ul>
+            <a href="src/ifctograph.html" class="tool-launch"
+              >Launch IFC Tool</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section class="section" id="how-it-works">
+        <div class="section-header">
+          <h2>How it works</h2>
+          <p>
+            From raw BIM data to an interactive network graph in four steps.
+          </p>
+        </div>
+        <div class="steps-grid">
+          <div class="step">
+            <div class="step-num">1</div>
+            <h4>Export your model</h4>
+            <p>
+              Export your BIM model as a CSV from Revit or ArchiCAD, or save as
+              an IFC file from any compliant BIM application.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <h4>Choose the right tool</h4>
+            <p>
+              Select the analyzer that matches your export format — Revit CSV,
+              ArchiCAD CSV, or universal IFC.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <h4>Upload your file</h4>
+            <p>
+              Drag and drop or browse for your file. All processing runs in your
+              browser — no data is ever sent to a server.
+            </p>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <h4>Explore the graph</h4>
+            <p>
+              Pan, zoom, and filter in 2D — or switch to immersive 3D view.
+              Export as PNG, SVG, or JSON when you're done.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-inner">
+        <span class="footer-copy"
+          >BIMUniXchange &mdash; Open Source BIM Visualization</span
+        >
+        <div class="footer-links">
+          <a
+            href="https://github.com/isaddiq/BIMUniXchange"
+            class="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub</a
+          >
+          <a
+            href="https://isaddiq.github.io"
+            class="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            >by Saddiq Ur Rehman</a
+          >
+        </div>
+      </div>
+    </footer>
+
+    <!-- Floating visitor counter button -->
+    <button id="visitorBtn" aria-label="Visitor stats" aria-expanded="false" title="Visitor stats">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </button>
+
+    <div id="visitorPopup" role="dialog" aria-label="Visitor stats">
+      <span class="popup-label">Visitors by country</span>
+      <a href="https://info.flagcounter.com/nA4d" target="_blank" rel="noopener noreferrer">
+        <img
+          src="https://s01.flagcounter.com/count2/nA4d/bg_FFFFFF/txt_475569/border_E2E8F0/columns_4/maxflags_20/viewers_0/labels_1/pageviews_1/flags_0/percent_0/"
+          alt="Visitor counter"
+          loading="lazy"
+          width="240"
+        />
+      </a>
+    </div>
+
+    <script>
+      (function () {
+        var btn = document.getElementById("visitorBtn");
+        var panel = document.getElementById("visitorPopup");
+        btn.addEventListener("click", function () {
+          var open = panel.classList.toggle("open");
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        document.addEventListener("click", function (e) {
+          if (!btn.contains(e.target) && !panel.contains(e.target)) {
+            panel.classList.remove("open");
+            btn.setAttribute("aria-expanded", "false");
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
