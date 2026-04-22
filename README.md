@@ -1,3 +1,6 @@
+
+
+
 # 🏗️ BIMUniXchange
 
 <div align="center">
@@ -12,6 +15,7 @@ _Seamless AEC-to-XR Pipeline for Immersive Construction Visualization_
 </div>
 
 ---
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/3d1f0a98-5bfe-4764-bab2-172e382ff987" />
 
 ## 🛒 **Download & Installation**
 
@@ -23,6 +27,17 @@ _Seamless AEC-to-XR Pipeline for Immersive Construction Visualization_
 
 Download and install ReUniXchange directly from the Autodesk App Store for seamless integration with Revit 2024, 2025, and 2026.
 
+### 🔧 ArchUniXchange for Archicad
+
+**Available in this repository**
+
+Download the **ArchUniXchange Python scripts** from this repository to enable the **Archicad** side of the BIM-to-Unity workflow.
+
+### 🔧 BIMUniXchange for Unity
+
+**BIMUniXchange_V1.1.0 is available in this repository in the releases on the right side of this page**
+
+Download the **BIMUniXchange Unity package** from this repository to use the Unity-side integration for immersive BIM-to-XR workflows.
 ---
 
 ## 🚀 **Quick Start Guide**
