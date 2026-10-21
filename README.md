@@ -205,7 +205,7 @@ https://github.com/isaddiq/BIMUniXchange
 <div align="center">
 
 **Saddiq Ur Rehman**  
-_PhD Candidate in Architecture_  
+_PhD in Architecture_  
 🏛️ **Kyung Hee University**  
 📧 **saddiqurrehman@khu.ac.kr**
 
