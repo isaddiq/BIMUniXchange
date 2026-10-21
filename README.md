@@ -140,6 +140,29 @@ Download the **BIMUniXchange Unity package** from this repository to use the Uni
 
 ---
 
+## 🕸️ **BIM Knowledge Graph Studio** (web)
+
+**Launch:** [isaddiq.github.io/BIMUniXchange/src/ifctograph.html](https://isaddiq.github.io/BIMUniXchange/src/ifctograph.html) · try it instantly with the [sample building](https://isaddiq.github.io/BIMUniXchange/src/ifctograph.html?sample=ifc)
+
+A browser-only workbench that turns IFC models (IFC2x3 / IFC4 / IFC4x3, `.ifc` or `.ifczip`) and BIMUniXchange Revit / ArchiCAD CSV exports into a semantic **knowledge graph**. Files never leave the browser. It replaces the former separate Revit, ArchiCAD and IFC analyzers — one Studio opens all three formats (samples: [IFC](https://isaddiq.github.io/BIMUniXchange/src/ifctograph.html?sample=ifc) · [Revit](https://isaddiq.github.io/BIMUniXchange/src/ifctograph.html?sample=revit) · [ArchiCAD](https://isaddiq.github.io/BIMUniXchange/src/ifctograph.html?sample=archicad)).
+
+| Capability | Details |
+| --- | --- |
+| **Parsing** | Streaming ISO 10303-21 indexer with lazy argument decoding (geometry is never materialised; ~90 MB / 1.5 M instances index in about a second). Multi-line entities, `''` escapes and `\X2\` unicode are handled. |
+| **Semantic model** | Every objectified `IfcRel*` becomes a typed edge with provenance; property & quantity sets resolved with project units; materials (layer / constituent / profile sets), classification references, documents, ports, zones, systems, tasks. |
+| **Inference** | Hosting (`wall hosts door` via voids ∘ fills), MEP flow (`feeds` from port connectivity and flow direction), space adjacency and door / stair access (from space boundaries), storey location, type-inherited properties and materials, discipline classification (e.g. `LoadBearing` walls → Structural, system type → HVAC / Plumbing / Electrical). |
+| **Ontology alignment** | Classes and relations mapped to **ifcOWL**, **BOT** (Site / Building / Storey / Space / Element, hasStorey, containsElement, hostsElement, adjacentZone) and **Brick** (equipment, `feeds`, `isPartOf`). |
+| **Lenses** | Knowledge graph · Spatial hierarchy · Breakdown tree (e.g. Category → Family → Type) · MEP systems & flow · Physical topology · Space adjacency (with space-syntax integration) · Types & classification crosswalk · Materials · Information structure (class ↔ property set) · Schema meta-graph. |
+| **Analytics** | Degree, PageRank, betweenness, harmonic closeness, clustering, components, Louvain communities & modularity, diameter, degree distribution, shortest paths, neighbourhood expansion. |
+| **CSV semantics** | Revit: families, types, levels, systems, `Host Id` hosting, phases, category ↔ IFC class crosswalk. ArchiCAD: layers, composites as materials, structural function, zones. |
+| **Model health** | Information-quality audit: duplicate / malformed GlobalIds, uncontained elements, missing types, materials, `Pset_*Common`, classification, IsExternal / FireRating, unconnected ports, flow elements without systems, spaces without boundaries or floor area. |
+| **Exploration** | Global search, property query builder (wildcard `*.Property`, numeric operators, presets), property catalogue with coverage statistics, colour by any property, property values as nodes. |
+| **Export** | RDF Turtle (ifcOWL + BOT + Brick + LBD PROPS), Neo4j Cypher, GraphML (Gephi / yEd / Cytoscape / NetworkX), JSON, node & edge CSV with metrics, publication-ready SVG, PNG, health and mapping reports. |
+
+> The bundled [`sample/sample-building.ifc`](sample/sample-building.ifc) is a geometry-free IFC4 model with spaces, boundaries, MEP ports and systems, types, materials and Uniclass references. It contains a few deliberate data-quality issues for the model-health demo.
+
+---
+
 ## 📜 **License & Attribution**
 
 <div align="center">

@@ -3,890 +3,1133 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BIMUniXchange — BIM Network Visualization Tools</title>
+    <title>BIMUniXchange — BIM Knowledge Graphs &amp; BIM-to-XR</title>
     <meta
       name="description"
-      content="Transform IFC files and Revit/ArchiCAD CSV exports into interactive 2D and 3D network graphs. Open-source BIM visualization tools for AEC professionals."
+      content="Open-source BIM Knowledge Graph Studio: turn IFC models and Revit / ArchiCAD exports into semantic knowledge graphs aligned to ifcOWL, BOT and Brick. Network analytics, space syntax, model-health checks and RDF / GraphML / Neo4j export — entirely in your browser."
     />
-    <meta
-      name="keywords"
-      content="BIM, IFC, Revit, ArchiCAD, network graph, visualization, AEC, building information modeling"
-    />
+    <meta name="keywords" content="BIM, IFC, knowledge graph, linked building data, ifcOWL, BOT, Brick, Revit, ArchiCAD, network analysis, space syntax, model checking, digital twin, XR, Unity" />
+    <meta property="og:title" content="BIMUniXchange — BIM Knowledge Graph Studio" />
+    <meta property="og:description" content="Turn IFC models and Revit / ArchiCAD exports into semantic knowledge graphs, in your browser." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://isaddiq.github.io/BIMUniXchange/" />
+    <meta property="og:image" content="https://isaddiq.github.io/BIMUniXchange/src/images/screens/studio-knowledge-graph.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://isaddiq.github.io/BIMUniXchange/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script>
+      try {
+        const t = localStorage.getItem("kg-theme");
+        if (t) document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
     <style>
       :root {
         --bg: #ffffff;
-        --surface: #f8fafc;
-        --border: #e2e8f0;
-        --border-strong: #cbd5e1;
+        --bg-2: #f6f8fb;
+        --panel: #ffffff;
+        --panel-2: #f8fafc;
+        --border: #e3e7ee;
+        --border-strong: #cdd4df;
         --text: #0f172a;
-        --text-secondary: #64748b;
+        --text-2: #475569;
+        --muted: #7c8799;
         --accent: #2563eb;
-        --accent-hover: #1d4ed8;
-        --accent-bg: #eff6ff;
-        --radius: 8px;
-        --radius-lg: 12px;
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+        --accent-2: #1d4ed8;
+        --accent-bg: #eef4ff;
+        --accent-border: rgba(37, 99, 235, 0.25);
+        --grid-dot: rgba(15, 23, 42, 0.07);
+        --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 20px rgba(15, 23, 42, 0.06);
+        --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.14);
+        --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+        --c-spatial: #8b5cf6;
+        --c-struct: #dc2626;
+        --c-arch: #2563eb;
+        --c-hvac: #0891b2;
+        --c-plumb: #16a34a;
+        --c-elec: #ca8a04;
+        --c-sem: #6366f1;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0a0e16;
+          --bg-2: #0d121c;
+          --panel: #111723;
+          --panel-2: #0e141f;
+          --border: #1f2836;
+          --border-strong: #2d394b;
+          --text: #e6eaf2;
+          --text-2: #a9b4c6;
+          --muted: #6f7b8f;
+          --accent: #5b9cff;
+          --accent-2: #7cb0ff;
+          --accent-bg: rgba(91, 156, 255, 0.12);
+          --accent-border: rgba(91, 156, 255, 0.35);
+          --grid-dot: rgba(226, 232, 240, 0.06);
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
+          --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0a0e16;
+        --bg-2: #0d121c;
+        --panel: #111723;
+        --panel-2: #0e141f;
+        --border: #1f2836;
+        --border-strong: #2d394b;
+        --text: #e6eaf2;
+        --text-2: #a9b4c6;
+        --muted: #6f7b8f;
+        --accent: #5b9cff;
+        --accent-2: #7cb0ff;
+        --accent-bg: rgba(91, 156, 255, 0.12);
+        --accent-border: rgba(91, 156, 255, 0.35);
+        --grid-dot: rgba(226, 232, 240, 0.06);
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+        color-scheme: dark;
       }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
       body {
-        font-family:
-          "Inter",
-          system-ui,
-          -apple-system,
-          sans-serif;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
         background: var(--bg);
         color: var(--text);
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
       }
+      a { color: inherit; }
+      img { max-width: 100%; display: block; }
+      .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+      .mono { font-family: var(--mono); }
 
-      /* ── Navigation ─────────────────────────────────── */
-      nav {
+      /* ── Nav ─────────────────────────────────── */
+      .nav {
         position: sticky;
         top: 0;
         z-index: 50;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        backdrop-filter: saturate(160%) blur(10px);
+        -webkit-backdrop-filter: saturate(160%) blur(10px);
         border-bottom: 1px solid var(--border);
       }
+      .nav-inner { height: 60px; display: flex; align-items: center; gap: 24px; }
+      .brand { display: flex; align-items: center; gap: 9px; font-weight: 750; letter-spacing: -0.02em; text-decoration: none; font-size: 15.5px; }
+      .brand-mark { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--accent); color: #fff; }
+      .nav-links { display: flex; gap: 2px; margin-left: 8px; }
+      .nav-links a { text-decoration: none; color: var(--text-2); font-size: 14px; font-weight: 500; padding: 6px 11px; border-radius: 7px; }
+      .nav-links a:hover { color: var(--text); background: var(--bg-2); }
+      .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+      .icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--text-2); cursor: pointer; text-decoration: none; }
+      .icon-btn:hover { background: var(--bg-2); border-color: var(--border); color: var(--text); }
+      .menu-btn { display: none; }
 
-      .nav-inner {
-        max-width: 1160px;
-        margin: 0 auto;
-        padding: 0 24px;
-        height: 56px;
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        border-radius: 9px;
+        font: inherit;
+        font-size: 14.5px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        border: 1px solid var(--border-strong);
+        background: var(--panel);
+        color: var(--text);
+        white-space: nowrap;
+        transition: transform 0.12s, background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+      }
+      .btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 18px -6px rgba(37, 99, 235, 0.55); }
+      .btn.primary:hover { background: var(--accent-2); color: #fff; }
+      .btn.sm { height: 34px; padding: 0 12px; font-size: 13.5px; }
+      .btn.lg { height: 48px; padding: 0 22px; font-size: 15.5px; }
+
+      /* ── Hero ────────────────────────────────── */
+      .hero { position: relative; padding: 72px 0 40px; overflow: hidden; }
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+        background-size: 24px 24px;
+        mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, #000 30%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 40%, #000 30%, transparent 75%);
+        pointer-events: none;
+      }
+      .hero-grid { position: relative; display: grid; grid-template-columns: 1.02fr 1fr; gap: 48px; align-items: center; }
+      .hero-grid > *, .gallery > *, .cite > *, .std-grid > *, .uses > * { min-width: 0; }
+      .kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        padding: 4px 12px 4px 6px;
+        border-radius: 999px;
+      }
+      .kicker .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 10px; }
+      .hero h1 {
+        font-size: clamp(36px, 5.2vw, 60px);
+        line-height: 1.04;
+        letter-spacing: -0.045em;
+        font-weight: 800;
+        margin: 20px 0 18px;
+      }
+      .grad-text {
+        background: linear-gradient(100deg, var(--accent) 0%, #8b5cf6 55%, #0891b2 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero-sub { font-size: 17.5px; color: var(--text-2); max-width: 560px; line-height: 1.65; }
+      .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+      .hero-alt { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+      .hero-alt a { color: var(--text-2); font-weight: 600; text-decoration: none; border-bottom: 1px dashed var(--border-strong); }
+      .hero-alt a:hover { color: var(--accent); border-color: var(--accent); }
+      .formats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 28px; }
+      .fmt { font-family: var(--mono); font-size: 11.5px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text-2); }
+
+      .window {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+      }
+      .window-bar { height: 38px; display: flex; align-items: center; gap: 7px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--panel-2); }
+      .window-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
+      .window-bar span { margin-left: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .hero-graph { position: relative; height: 440px; background-color: var(--bg-2); background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px); background-size: 20px 20px; }
+      .hero-graph svg { width: 100%; height: 100%; display: block; }
+      .hg-legend {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        background: color-mix(in srgb, var(--panel) 92%, transparent);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 8px 10px;
+        font-size: 11.5px;
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 3px 14px;
+        color: var(--text-2);
+      }
+      .hg-legend span { display: flex; align-items: center; gap: 6px; }
+      .hg-legend i { width: 8px; height: 8px; border-radius: 50%; }
+      .hg-tip {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 8px 11px;
+        font-size: 12px;
+        box-shadow: var(--shadow);
+        max-width: 230px;
+        pointer-events: none;
+        transition: opacity 0.15s;
+      }
+      .hg-tip b { display: block; font-size: 12.5px; }
+      .hg-tip small { color: var(--muted); }
+      .flow { stroke-dasharray: 3 5; animation: flow 1.2s linear infinite; }
+      @keyframes flow { to { stroke-dashoffset: -16; } }
+      @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+
+      /* ── Stats band ─────────────────────────── */
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: 14px; background: var(--panel); margin-top: 56px; overflow: hidden; }
+      .stat { padding: 20px 22px; border-right: 1px solid var(--border); }
+      .stat:last-child { border-right: 0; }
+      .stat b { display: block; font-size: 28px; letter-spacing: -0.03em; font-weight: 750; line-height: 1.1; }
+      .stat span { font-size: 13px; color: var(--text-2); }
+
+      /* ── Sections ───────────────────────────── */
+      section.block { padding: 96px 0; }
+      section.alt { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+      .sec-head { max-width: 720px; margin-bottom: 44px; }
+      .sec-head h2 { font-size: clamp(28px, 3.4vw, 40px); letter-spacing: -0.035em; line-height: 1.12; margin: 10px 0 14px; font-weight: 750; }
+      .sec-head p { color: var(--text-2); font-size: 16.5px; }
+      .center { text-align: center; margin-left: auto; margin-right: auto; }
+
+      /* gallery */
+      .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+      .tab {
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 9px 15px;
+        border-radius: 9px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text-2);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .tab:hover { color: var(--text); border-color: var(--border-strong); }
+      .tab[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+      .tab i { width: 8px; height: 8px; border-radius: 50%; }
+      .gallery { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
+      .gallery-copy h3 { font-size: 21px; letter-spacing: -0.02em; margin-bottom: 10px; }
+      .gallery-copy p { color: var(--text-2); font-size: 15px; }
+      .gallery-copy ul { list-style: none; margin-top: 16px; display: grid; gap: 8px; }
+      .gallery-copy li { font-size: 14px; color: var(--text-2); display: flex; gap: 9px; }
+      .gallery-copy li::before { content: ""; flex: 0 0 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 9px; }
+      .gallery-copy .btn { margin-top: 22px; }
+      .shot { aspect-ratio: 16 / 10; background: var(--panel-2); }
+      .shot img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+
+      /* cards */
+      .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      }
+      .card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow); }
+      .card .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 16px; color: #fff; }
+      .card h3 { font-size: 16px; letter-spacing: -0.01em; margin-bottom: 6px; }
+      .card p { font-size: 14px; color: var(--text-2); line-height: 1.55; }
+      .card code { font-family: var(--mono); font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+
+      /* pipeline */
+      .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; position: relative; }
+      .step { position: relative; padding: 0 14px; }
+      .step-num {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: var(--panel);
+        border: 1px solid var(--border-strong);
+        font-weight: 700;
+        font-family: var(--mono);
+        position: relative;
+        z-index: 1;
+        margin-bottom: 16px;
+        color: var(--accent);
+      }
+      .step:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 22px;
+        left: 58px;
+        right: 0;
+        border-top: 2px dashed var(--border-strong);
+      }
+      .step h4 { font-size: 15px; margin-bottom: 6px; }
+      .step p { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
+
+      /* sources */
+      .source { display: flex; flex-direction: column; }
+      .source-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+      .source-head img { width: 40px; height: 40px; object-fit: contain; }
+      .source-head h3 { margin: 0; }
+      .source-head small { display: block; font-family: var(--mono); color: var(--muted); font-size: 11.5px; }
+      .source ul { list-style: none; display: grid; gap: 7px; margin: 4px 0 20px; flex: 1; }
+      .source li { font-size: 14px; color: var(--text-2); padding-left: 18px; position: relative; }
+      .source li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; font-size: 12px; top: 1px; }
+      .source .btn { align-self: flex-start; }
+
+      /* standards */
+      .std-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .std-list { display: grid; gap: 10px; }
+      .std { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px dashed var(--border); }
+      .std:last-child { border-bottom: 0; }
+      .std b { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+      .std span { font-size: 14px; color: var(--text-2); }
+
+      /* use cases */
+      .uses { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .use h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin-bottom: 14px; }
+      .use ul { list-style: none; display: grid; gap: 12px; }
+      .use li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 14.5px; color: var(--text-2); }
+      .use li b { color: var(--text); font-weight: 600; }
+      .use li svg { margin-top: 3px; color: var(--accent); }
+
+      /* XR */
+      .xr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .xr .card { display: flex; flex-direction: column; }
+      .xr .tag { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+      .xr .card p { flex: 1; margin-bottom: 18px; }
+      .xr-flow { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-2); font-weight: 600; }
+      .xr-flow span { padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); }
+      .xr-flow svg { color: var(--muted); }
+
+      /* citation */
+      .cite { display: grid; grid-template-columns: 1fr 1.1fr; gap: 32px; align-items: start; }
+      pre.bib {
+        position: relative;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.6;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        color: var(--text-2);
+      }
+      .copy-btn { position: absolute; top: 10px; right: 10px; }
+      .author { display: flex; gap: 14px; align-items: center; margin-top: 22px; }
+      .avatar { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; display: grid; place-items: center; font-weight: 700; }
+      .author small { display: block; color: var(--muted); }
+
+      /* CTA band */
+      .cta-band {
+        border-radius: 20px;
+        padding: 48px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-      }
-
-      .nav-logo {
-        font-weight: 700;
-        font-size: 0.9375rem;
-        color: var(--text);
-        text-decoration: none;
-        letter-spacing: -0.02em;
-      }
-
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .nav-link {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        text-decoration: none;
-        padding: 6px 12px;
-        border-radius: var(--radius);
-        transition:
-          background 0.15s,
-          color 0.15s;
-      }
-
-      .nav-link:hover {
-        background: var(--surface);
-        color: var(--text);
-      }
-
-      .nav-link.github {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--text);
-        color: #fff;
-        font-weight: 600;
-      }
-
-      .nav-link.github:hover {
-        background: #1e293b;
-      }
-
-      /* ── Page wrap ───────────────────────────────────── */
-      .page-wrap {
-        max-width: 1160px;
-        margin: 0 auto;
-        padding: 0 24px;
-      }
-
-      /* ── Hero ────────────────────────────────────────── */
-      .hero {
-        padding: 80px 0 64px;
-        text-align: center;
-      }
-
-      .hero-kicker {
-        display: inline-block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--accent);
-        background: var(--accent-bg);
-        padding: 4px 12px;
-        border-radius: 999px;
-        margin-bottom: 20px;
-        border: 1px solid rgba(37, 99, 235, 0.15);
-      }
-
-      .hero h1 {
-        font-size: clamp(2rem, 5vw, 3.25rem);
-        font-weight: 700;
-        letter-spacing: -0.035em;
-        line-height: 1.1;
-        color: var(--text);
-        max-width: 680px;
-        margin: 0 auto 16px;
-      }
-
-      .hero-sub {
-        font-size: 1.0625rem;
-        color: var(--text-secondary);
-        max-width: 520px;
-        margin: 0 auto 36px;
-        line-height: 1.65;
-      }
-
-      .hero-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
+        gap: 24px;
         flex-wrap: wrap;
-      }
-
-      .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--accent);
+        background: linear-gradient(120deg, #1e3a8a 0%, #4338ca 50%, #0e7490 100%);
         color: #fff;
-        font-weight: 600;
-        font-size: 0.9375rem;
-        padding: 10px 22px;
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition:
-          background 0.15s,
-          transform 0.1s;
-        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
-        font-family: inherit;
-      }
-
-      .btn-primary:hover {
-        background: var(--accent-hover);
-        transform: translateY(-1px);
-      }
-
-      .btn-outline {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: #fff;
-        color: var(--text);
-        font-weight: 600;
-        font-size: 0.9375rem;
-        padding: 10px 22px;
-        border-radius: var(--radius);
-        border: 1px solid var(--border-strong);
-        text-decoration: none;
-        transition:
-          border-color 0.15s,
-          color 0.15s,
-          transform 0.1s;
-        font-family: inherit;
-      }
-
-      .btn-outline:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-        transform: translateY(-1px);
-      }
-
-      /* ── Compat row ──────────────────────────────────── */
-      .compat-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        margin-top: 44px;
-        flex-wrap: wrap;
-      }
-
-      .compat-divider {
-        width: 1px;
-        height: 20px;
-        background: var(--border);
-      }
-
-      .compat-label {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-      }
-
-      .compat-logos {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-      }
-
-      .compat-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text);
-      }
-
-      .compat-item img {
-        height: 26px;
-        width: auto;
-        object-fit: contain;
-      }
-
-      /* ── Section layout ──────────────────────────────── */
-      .section {
-        padding: 64px 0;
-        border-top: 1px solid var(--border);
-      }
-
-      .section-header {
-        margin-bottom: 40px;
-      }
-
-      .section-header h2 {
-        font-size: 1.625rem;
-        font-weight: 700;
-        letter-spacing: -0.025em;
-        color: var(--text);
-      }
-
-      .section-header p {
-        color: var(--text-secondary);
-        margin-top: 6px;
-        font-size: 0.9375rem;
-      }
-
-      /* ── Tool cards ──────────────────────────────────── */
-      .tools-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 16px;
-      }
-
-      .tool-card {
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 28px;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s,
-          transform 0.2s;
         position: relative;
         overflow: hidden;
       }
-
-      .tool-card::before {
+      .cta-band::after {
         content: "";
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--accent);
-        opacity: 0;
-        transition: opacity 0.2s;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+        background-size: 22px 22px;
+        pointer-events: none;
       }
+      .cta-band h2 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -0.03em; line-height: 1.15; max-width: 560px; }
+      .cta-band p { opacity: 0.85; margin-top: 8px; }
+      .cta-band .btn { position: relative; z-index: 1; background: #fff; color: #1e3a8a; border-color: #fff; }
+      .cta-band .btn:hover { color: #1e3a8a; }
+      .cta-band > div { position: relative; z-index: 1; }
 
-      .tool-card:hover {
-        border-color: var(--border-strong);
-        box-shadow: var(--shadow-md);
-        transform: translateY(-3px);
-      }
+      /* footer */
+      footer { border-top: 1px solid var(--border); padding: 48px 0 40px; margin-top: 96px; }
+      .foot { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 32px; }
+      .foot h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+      .foot a { display: block; text-decoration: none; color: var(--text-2); font-size: 14px; padding: 3px 0; }
+      .foot a:hover { color: var(--accent); }
+      .foot p { color: var(--text-2); font-size: 14px; max-width: 320px; margin-top: 10px; }
+      .foot-bottom { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 
-      .tool-card:hover::before {
-        opacity: 1;
-      }
+      /* reveal */
+      .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.6s ease, transform 0.6s ease; }
+      .reveal.in { opacity: 1; transform: none; }
+      @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
-      .tool-card-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-
-      .tool-logo {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        flex-shrink: 0;
-      }
-
-      .tool-card-title {
-        flex: 1;
-      }
-
-      .tool-card h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-        line-height: 1.3;
-      }
-
-      .tool-badge {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        padding: 2px 8px;
-        border-radius: 4px;
-        background: var(--surface);
-        color: var(--text-secondary);
-        border: 1px solid var(--border);
-        margin-top: 4px;
-        display: inline-block;
-      }
-
-      .tool-card p {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        line-height: 1.65;
-        margin-bottom: 20px;
-      }
-
-      .tool-features {
-        list-style: none;
-        margin-bottom: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        flex: 1;
-      }
-
-      .tool-features li {
-        font-size: 0.8125rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: flex-start;
-        gap: 9px;
-        line-height: 1.5;
-      }
-
-      .tool-features li::before {
-        content: "";
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: var(--accent);
-        margin-top: 8px;
-        flex-shrink: 0;
-      }
-
-      .tool-launch {
-        display: block;
-        text-align: center;
-        background: var(--text);
-        color: #fff;
-        font-family: inherit;
-        font-weight: 600;
-        font-size: 0.875rem;
-        padding: 10px 16px;
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition:
-          background 0.15s,
-          transform 0.1s;
-        border: none;
-        cursor: pointer;
-      }
-
-      .tool-launch:hover {
-        background: #1e293b;
-        transform: translateY(-1px);
-      }
-
-      /* ── How it works ────────────────────────────────── */
-      .steps-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 28px;
-      }
-
-      .step {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .step-num {
-        width: 32px;
-        height: 32px;
-        background: var(--accent);
-        color: #fff;
-        border-radius: var(--radius);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.875rem;
-        font-weight: 700;
-        flex-shrink: 0;
-      }
-
-      .step h4 {
-        font-size: 0.9375rem;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-      }
-
-      .step p {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        line-height: 1.65;
-      }
-
-      /* ── Footer ──────────────────────────────────────── */
-      footer {
-        border-top: 1px solid var(--border);
-        padding: 32px 0;
-        margin-top: 0;
-      }
-
-      .footer-inner {
-        max-width: 1160px;
-        margin: 0 auto;
-        padding: 0 24px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-
-      .footer-copy {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-      }
-
-      .footer-links {
-        display: flex;
-        gap: 20px;
-      }
-
-      .footer-link {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        text-decoration: none;
-        transition: color 0.15s;
-      }
-
-      .footer-link:hover {
-        color: var(--text);
-      }
-
-      /* ── Visitor counter floating button ─────────────── */
+      /* visitor counter */
       #visitorBtn {
         position: fixed;
-        right: 20px;
-        bottom: 24px;
-        z-index: 200;
-        width: 44px;
-        height: 44px;
+        bottom: 22px;
+        right: 22px;
+        z-index: 40;
+        width: 42px;
+        height: 42px;
         border-radius: 50%;
-        background: var(--text);
-        color: #fff;
-        border: none;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text-2);
+        box-shadow: var(--shadow);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-        transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-        font-size: 1.1rem;
+        display: grid;
+        place-items: center;
       }
-
-      #visitorBtn:hover {
-        background: var(--accent);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
-      }
-
-      #visitorBtn[aria-expanded="true"] {
-        background: var(--accent);
-      }
-
+      #visitorBtn:hover, #visitorBtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent-border); }
       #visitorPopup {
         position: fixed;
-        right: 20px;
-        bottom: 78px;
-        z-index: 199;
+        bottom: 74px;
+        right: 22px;
+        z-index: 40;
         background: #fff;
         border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        padding: 16px;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: var(--shadow-lg);
         display: none;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        min-width: 200px;
-        transform-origin: bottom right;
-        animation: popup-in 0.18s ease;
       }
+      #visitorPopup.open { display: block; }
+      #visitorPopup .popup-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; margin-bottom: 8px; }
 
-      @keyframes popup-in {
-        from { opacity: 0; transform: scale(0.9) translateY(8px); }
-        to   { opacity: 1; transform: scale(1) translateY(0); }
+      /* responsive */
+      @media (max-width: 1040px) {
+        .hero-grid { grid-template-columns: minmax(0, 1fr); }
+        .gallery { grid-template-columns: minmax(0, 1fr); }
+        .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3, .xr { grid-template-columns: 1fr 1fr; }
+        .pipeline { grid-template-columns: repeat(3, 1fr); row-gap: 28px; }
+        .step:nth-child(3)::after { display: none; }
+        .cite, .std-grid { grid-template-columns: 1fr; }
+        .foot { grid-template-columns: 1fr 1fr; }
       }
-
-      #visitorPopup.open {
-        display: flex;
-      }
-
-      .popup-label {
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--text-secondary);
-        align-self: flex-start;
-      }
-
-      #visitorPopup img {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-radius: 4px;
-      }
-
-      /* ── Responsive ──────────────────────────────────── */
-      @media (max-width: 640px) {
-        .hero {
-          padding: 48px 0 40px;
-        }
-
-        .hero h1 {
-          font-size: 2rem;
-        }
-
-        .tools-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .footer-inner {
-          flex-direction: column;
-          gap: 8px;
-          text-align: center;
-        }
-
-        .compat-row {
-          flex-direction: column;
-          gap: 12px;
-        }
+      @media (max-width: 760px) {
+        .nav-links { display: none; position: absolute; top: 60px; left: 0; right: 0; flex-direction: column; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 16px 14px; margin: 0; }
+        .nav-links.open { display: flex; }
+        .menu-btn { display: inline-grid; }
+        .nav-right .btn { display: none; }
+        .wrap { padding: 0 16px; }
+        .hero { padding-top: 44px; }
+        .hero-graph { height: 340px; }
+        .hg-tip { display: none; }
+        .stats { grid-template-columns: 1fr 1fr; }
+        .stat:nth-child(2) { border-right: 0; }
+        .stat:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+        .grid-4, .grid-3, .xr, .uses { grid-template-columns: 1fr; }
+        .pipeline { grid-template-columns: 1fr; }
+        .step::after { display: none; }
+        .std { grid-template-columns: 1fr; gap: 2px; }
+        section.block { padding: 64px 0; }
+        .cta-band { padding: 32px 24px; }
+        .foot { grid-template-columns: 1fr; }
       }
     </style>
   </head>
+
   <body>
-    <!-- Navigation -->
-    <nav>
-      <div class="nav-inner">
-        <a href="index.html" class="nav-logo">BIMUniXchange</a>
-        <div class="nav-links">
-          <a href="#tools" class="nav-link">Tools</a>
-          <a href="#how-it-works" class="nav-link">How it works</a>
-          <a
-            href="https://github.com/isaddiq/BIMUniXchange"
-            class="nav-link github"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
-              />
-            </svg>
-            GitHub
+    <!-- ── Navigation ── -->
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href="index.html" class="brand" aria-label="BIMUniXchange home">
+          <span class="brand-mark">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="5" cy="6" r="2.5" /><circle cx="19" cy="6" r="2.5" /><circle cx="12" cy="18" r="2.5" /><path d="M7.2 7.2l3.6 8.6M16.8 7.2l-3.6 8.6M7.5 6h9" /></svg>
+          </span>
+          BIMUniXchange
+        </a>
+        <nav class="nav-links" id="navLinks" aria-label="Primary">
+          <a href="#studio">Studio</a>
+          <a href="#capabilities">Capabilities</a>
+          <a href="#sources">Inputs</a>
+          <a href="#standards">Standards</a>
+          <a href="#xr">BIM → XR</a>
+          <a href="#research">Research</a>
+        </nav>
+        <div class="nav-right">
+          <button class="icon-btn" id="themeBtn" title="Toggle light / dark theme" aria-label="Toggle theme">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+          </button>
+          <a class="icon-btn" href="https://github.com/isaddiq/BIMUniXchange" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub repository">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>
           </a>
+          <a class="btn primary sm" href="src/ifctograph.html">Open Studio</a>
+          <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          </button>
         </div>
       </div>
-    </nav>
+    </header>
 
-    <div class="page-wrap">
-      <!-- Hero -->
+    <main>
+      <!-- ── Hero ── -->
       <section class="hero">
-        <span class="hero-kicker">Open Source · AEC Tools</span>
-        <h1>Network graphs for BIM data</h1>
-        <p class="hero-sub">
-          Turn IFC files and CSV exports from Revit and ArchiCAD into
-          interactive 2D and 3D network diagrams. Explore element relationships,
-          zoom, filter, and export.
-        </p>
-        <div class="hero-actions">
-          <a href="#tools" class="btn-primary">Get started</a>
-          <a
-            href="https://github.com/isaddiq/BIMUniXchange"
-            class="btn-outline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
-              />
-            </svg>
-            View on GitHub
-          </a>
+        <div class="wrap">
+          <div class="hero-grid">
+            <div>
+              <span class="kicker"><span class="dot">✦</span>Open source · runs entirely in your browser</span>
+              <h1>Turn BIM models into <span class="grad-text">knowledge graphs.</span></h1>
+              <p class="hero-sub">
+                BIMUniXchange reads IFC models and Revit / ArchiCAD exports, turns every relationship into a typed, ontology-aligned edge, infers what the model
+                only implies, and gives researchers and practitioners the tools to analyse, audit and export it.
+              </p>
+              <div class="hero-cta">
+                <a class="btn primary lg" href="src/ifctograph.html">
+                  Open the Studio
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+                </a>
+                <a class="btn lg" href="src/ifctograph.html?sample=ifc">Try the sample building</a>
+              </div>
+              <p class="hero-alt">Or explore a real <a href="src/ifctograph.html?sample=revit">Revit export</a> · <a href="src/ifctograph.html?sample=archicad">ArchiCAD export</a></p>
+              <div class="formats" aria-label="Supported inputs">
+                <span class="fmt">IFC2x3</span><span class="fmt">IFC4</span><span class="fmt">IFC4x3</span><span class="fmt">.ifczip</span><span class="fmt">Revit CSV</span><span class="fmt">ArchiCAD CSV</span>
+              </div>
+            </div>
+            <div class="window" aria-hidden="true">
+              <div class="window-bar"><i></i><i></i><i></i><span>knowledge-graph · riverside-community-hub.ifc</span></div>
+              <div class="hero-graph" id="heroGraph">
+                <div class="hg-tip" id="hgTip"><b>Hover the graph</b><small>Spatial structure, systems and inferred MEP flow</small></div>
+                <div class="hg-legend">
+                  <span><i style="background: var(--c-spatial)"></i>Spatial</span>
+                  <span><i style="background: var(--c-struct)"></i>Structural</span>
+                  <span><i style="background: var(--c-arch)"></i>Architectural</span>
+                  <span><i style="background: var(--c-hvac)"></i>HVAC</span>
+                  <span><i style="background: var(--c-plumb)"></i>Plumbing</span>
+                  <span><i style="background: var(--c-elec)"></i>Electrical</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats reveal">
+            <div class="stat"><b>10</b><span>analytical lenses, from spatial trees to schema meta-graphs</span></div>
+            <div class="stat"><b>20</b><span>information-quality checks with one-click subgraphs</span></div>
+            <div class="stat"><b>3</b><span>ontologies aligned — ifcOWL, BOT and Brick</span></div>
+            <div class="stat"><b>0 bytes</b><span>uploaded — parsing and analysis stay on your machine</span></div>
+          </div>
         </div>
-        <div class="compat-row">
-          <span class="compat-label">Works with</span>
-          <div class="compat-divider"></div>
-          <div class="compat-logos">
-            <div class="compat-item">
-              <img src="src/images/Revit.png" alt="Revit" />
-              Revit
-            </div>
-            <div class="compat-item">
-              <img src="src/images/Archicad.png" alt="ArchiCAD" />
-              ArchiCAD
-            </div>
-            <div class="compat-item">
-              <img src="src/images/ifc.png" alt="IFC" />
-              IFC
+      </section>
+
+      <!-- ── Studio gallery ── -->
+      <section class="block alt" id="studio">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="eyebrow">The Studio</span>
+            <h2>One workbench, many ways to read a building</h2>
+            <p>Each lens projects the same semantic model onto the question you are asking — and every node opens an inspector with attributes, property sets, materials, ontology mappings and relationships.</p>
+          </div>
+          <div class="tabs" role="tablist" id="galleryTabs"></div>
+          <div class="gallery reveal">
+            <div class="gallery-copy" id="galleryCopy"></div>
+            <div class="window">
+              <div class="window-bar"><i></i><i></i><i></i><span id="galleryUrl">isaddiq.github.io/BIMUniXchange/src/ifctograph.html</span></div>
+              <div class="shot"><img id="galleryImg" src="src/images/screens/studio-knowledge-graph.webp" alt="" width="1600" height="1000" /></div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Tools -->
-      <section class="section" id="tools">
-        <div class="section-header">
-          <h2>Choose your tool</h2>
-          <p>Select the analyzer that matches your BIM export format.</p>
-        </div>
-        <div class="tools-grid">
-          <!-- Revit -->
-          <div class="tool-card">
-            <div class="tool-card-header">
-              <img src="src/images/Revit.png" alt="Revit" class="tool-logo" />
-              <div class="tool-card-title">
-                <h3>Revit CSV Analyzer</h3>
-                <span class="tool-badge">CSV Export</span>
-              </div>
-            </div>
-            <p>
-              Visualize Revit model relationships from CSV exports. Explore
-              category hierarchies, family structures, MEP systems, levels,
-              phases, and host relationships.
-            </p>
-            <ul class="tool-features">
-              <li>Category and family hierarchy</li>
-              <li>MEP system connectivity</li>
-              <li>Level and spatial views</li>
-              <li>Phase timeline analysis</li>
-              <li>Host relationship mapping</li>
-            </ul>
-            <a href="src/Revit.html" class="tool-launch">Launch Revit Tool</a>
+      <!-- ── Capabilities ── -->
+      <section class="block" id="capabilities">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="eyebrow">Capabilities</span>
+            <h2>Built for research rigour and day-to-day model QA</h2>
+            <p>From a robust STEP parser to network science and open exports, every step is transparent: edges keep their source relationship, and inferred facts state the rule that produced them.</p>
+          </div>
+          <div class="grid-4">
+            <article class="card reveal">
+              <div class="ic" style="background: #2563eb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h5" /></svg></div>
+              <h3>Fast, faithful IFC parsing</h3>
+              <p>Streaming ISO 10303-21 indexer with lazy decoding. Geometry is never materialised — a 90 MB file indexes in about a second.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #8b5cf6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="12" cy="18" r="2.5" /><path d="M8 7l3 9M16 7l-3 9" /></svg></div>
+              <h3>Semantic enrichment</h3>
+              <p>Inferred hosting, port-to-port <code>feeds</code>, space adjacency and door / stair access, storey location, type-inherited properties.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #0891b2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5-9 5-9-5z" /><path d="M3 12l9 5 9-5M3 17l9 5 9-5" /></svg></div>
+              <h3>Ontology alignment</h3>
+              <p>Classes and relations mapped to ifcOWL, BOT and Brick; properties exported as LBD PROPS. Coverage is reported per class.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #16a34a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18" /><path d="M7 15l4-5 3 3 5-7" /></svg></div>
+              <h3>Network science</h3>
+              <p>Degree, PageRank, betweenness, closeness, clustering, Louvain communities, modularity, diameter and shortest paths.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #ca8a04"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1" /><rect x="13" y="3" width="8" height="8" rx="1" /><rect x="3" y="13" width="18" height="8" rx="1" /></svg></div>
+              <h3>Space syntax</h3>
+              <p>Access graphs from space boundaries with mean depth, relative asymmetry and integration — rooted at the exterior.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #dc2626"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg></div>
+              <h3>Model health</h3>
+              <p>20 checks — GlobalIds, containment, typing, materials, <code>Pset_*Common</code>, classification, MEP topology — scored and explorable.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #db2777"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg></div>
+              <h3>Query &amp; catalogue</h3>
+              <p>Property query builder with wildcards and numeric operators, a property catalogue with coverage statistics, colour by any property.</p>
+            </article>
+            <article class="card reveal">
+              <div class="ic" style="background: #475569"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg></div>
+              <h3>Open exports</h3>
+              <p>RDF Turtle, Neo4j Cypher, GraphML, JSON and CSV with metrics, publication-ready SVG, plus health and mapping reports.</p>
+            </article>
           </div>
 
-          <!-- ArchiCAD -->
-          <div class="tool-card">
-            <div class="tool-card-header">
-              <img
-                src="src/images/Archicad.png"
-                alt="ArchiCAD"
-                class="tool-logo"
-              />
-              <div class="tool-card-title">
-                <h3>ArchiCAD CSV Analyzer</h3>
-                <span class="tool-badge">CSV Export</span>
-              </div>
+          <div style="margin-top: 72px">
+            <div class="sec-head" style="margin-bottom: 32px">
+              <span class="eyebrow">How it works</span>
+              <h2 style="font-size: clamp(22px, 2.6vw, 30px)">From file to knowledge graph in five steps</h2>
             </div>
-            <p>
-              Explore ArchiCAD model data from CSV exports. Map zones,
-              materials, classifications, and spatial relationships between
-              building elements.
-            </p>
-            <ul class="tool-features">
-              <li>Element type hierarchy</li>
-              <li>Zone and space connectivity</li>
-              <li>Material relationship mapping</li>
-              <li>Classification structure</li>
-              <li>Hotlink analysis</li>
-            </ul>
-            <a href="src/ArchiCAD.html" class="tool-launch"
-              >Launch ArchiCAD Tool</a
-            >
-          </div>
-
-          <!-- IFC -->
-          <div class="tool-card">
-            <div class="tool-card-header">
-              <img src="src/images/ifc.png" alt="IFC" class="tool-logo" />
-              <div class="tool-card-title">
-                <h3>IFC Network Analyzer</h3>
-                <span class="tool-badge">IFC File</span>
-              </div>
+            <div class="pipeline reveal">
+              <div class="step"><div class="step-num">01</div><h4>Load</h4><p>Drop an .ifc, .ifczip or CSV. Nothing leaves the browser.</p></div>
+              <div class="step"><div class="step-num">02</div><h4>Index</h4><p>Every STEP instance is indexed by byte range; arguments decode on demand.</p></div>
+              <div class="step"><div class="step-num">03</div><h4>Model</h4><p>Objectified relationships become typed edges; psets, units and materials resolve.</p></div>
+              <div class="step"><div class="step-num">04</div><h4>Infer</h4><p>Rules add hosting, flow, adjacency and discipline — each with provenance.</p></div>
+              <div class="step"><div class="step-num">05</div><h4>Analyse &amp; export</h4><p>Lenses, metrics, queries and audits — then RDF, GraphML or Neo4j.</p></div>
             </div>
-            <p>
-              Parse and visualize any IFC file. Build element, spatial, system,
-              and property-set graphs from any compliant BIM model — no software
-              lock-in.
-            </p>
-            <ul class="tool-features">
-              <li>IFC schema compliance</li>
-              <li>Spatial structure hierarchy</li>
-              <li>System and MEP networks</li>
-              <li>Property set relationships</li>
-              <li>Cross-platform IFC support</li>
-            </ul>
-            <a href="src/ifctograph.html" class="tool-launch"
-              >Launch IFC Tool</a
-            >
           </div>
         </div>
       </section>
 
-      <!-- How it works -->
-      <section class="section" id="how-it-works">
-        <div class="section-header">
-          <h2>How it works</h2>
-          <p>
-            From raw BIM data to an interactive network graph in four steps.
-          </p>
-        </div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-num">1</div>
-            <h4>Export your model</h4>
-            <p>
-              Export your BIM model as a CSV from Revit or ArchiCAD, or save as
-              an IFC file from any compliant BIM application.
-            </p>
+      <!-- ── Sources ── -->
+      <section class="block alt" id="sources">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="eyebrow">Inputs</span>
+            <h2>One studio, three sources</h2>
+            <p>Open-standard IFC and the tabular exports produced by the BIMUniXchange Revit add-in and ArchiCAD scripts all map onto the same semantic model — so every lens, check and export works for each.</p>
           </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <h4>Choose the right tool</h4>
-            <p>
-              Select the analyzer that matches your export format — Revit CSV,
-              ArchiCAD CSV, or universal IFC.
-            </p>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <h4>Upload your file</h4>
-            <p>
-              Drag and drop or browse for your file. All processing runs in your
-              browser — no data is ever sent to a server.
-            </p>
-          </div>
-          <div class="step">
-            <div class="step-num">4</div>
-            <h4>Explore the graph</h4>
-            <p>
-              Pan, zoom, and filter in 2D — or switch to immersive 3D view.
-              Export as PNG, SVG, or JSON when you're done.
-            </p>
+          <div class="grid-3">
+            <article class="card source reveal">
+              <div class="source-head"><img src="src/images/ifc.png" alt="" /><div><h3>IFC models</h3><small>IFC2x3 · IFC4 · IFC4x3 · .ifczip</small></div></div>
+              <ul>
+                <li>Full IfcRel* relationship graph with provenance</li>
+                <li>Spaces, boundaries, ports, systems, zones, tasks</li>
+                <li>Property &amp; quantity sets with project units</li>
+                <li>Material layer, constituent and profile sets</li>
+              </ul>
+              <a class="btn" href="src/ifctograph.html?sample=ifc">Open sample building</a>
+            </article>
+            <article class="card source reveal">
+              <div class="source-head"><img src="src/images/Revit.png" alt="" /><div><h3>Revit CSV</h3><small>ReUniXchange export</small></div></div>
+              <ul>
+                <li>Category → Family → Type breakdown tree</li>
+                <li>Levels, MEP systems and hosting (Host Id)</li>
+                <li>Revit category ↔ IFC class crosswalk</li>
+                <li>Parameters grouped into shared property sets</li>
+              </ul>
+              <a class="btn" href="src/ifctograph.html?sample=revit">Open Revit sample</a>
+            </article>
+            <article class="card source reveal">
+              <div class="source-head"><img src="src/images/Archicad.png" alt="" /><div><h3>ArchiCAD CSV</h3><small>ArchUniXchange export</small></div></div>
+              <ul>
+                <li>Category → Layer breakdown and zones</li>
+                <li>Composites as materials, structural function</li>
+                <li>ArchiCAD category ↔ IFC class crosswalk</li>
+                <li>GUID and storey data-quality diagnostics</li>
+              </ul>
+              <a class="btn" href="src/ifctograph.html?sample=archicad">Open ArchiCAD sample</a>
+            </article>
           </div>
         </div>
       </section>
-    </div>
 
-    <!-- Footer -->
+      <!-- ── Standards ── -->
+      <section class="block" id="standards">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="eyebrow">Standards &amp; formats</span>
+            <h2>Speaks the languages of linked data and graph tooling</h2>
+            <p>Take the graph wherever your work continues — triple stores, graph databases, network-analysis software or a paper figure.</p>
+          </div>
+          <div class="std-grid">
+            <div class="card reveal">
+              <h3 style="margin-bottom: 6px">Ontologies</h3>
+              <div class="std-list">
+                <div class="std"><b>ifcOWL</b><span>Every class typed against the buildingSMART IFC4 ADD2 TC1 OWL ontology.</span></div>
+                <div class="std"><b>BOT</b><span>Site, Building, Storey, Space, Element; hasStorey, containsElement, hostsElement, adjacentZone.</span></div>
+                <div class="std"><b>Brick</b><span>Equipment classes (pumps, fans, valves, sensors…), feeds and isPartOf for systems.</span></div>
+                <div class="std"><b>LBD PROPS</b><span>Level-1 properties as literals for straightforward SPARQL.</span></div>
+              </div>
+            </div>
+            <div class="card reveal">
+              <h3 style="margin-bottom: 6px">Exports</h3>
+              <div class="std-list">
+                <div class="std"><b>RDF Turtle</b><span>Whole model or visible subgraph, ready for GraphDB, Jena or rdflib.</span></div>
+                <div class="std"><b>Neo4j Cypher</b><span>Labelled property graph with typed relationships and an inferred flag.</span></div>
+                <div class="std"><b>GraphML · CSV</b><span>Gephi, yEd, Cytoscape and NetworkX, including centralities and positions.</span></div>
+                <div class="std"><b>SVG · PNG · JSON</b><span>Vector figures for publications and node-link JSON with properties.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Use cases ── -->
+      <section class="block alt">
+        <div class="wrap">
+          <div class="sec-head center" style="text-align: center">
+            <span class="eyebrow">Who it's for</span>
+            <h2>Research questions and project deliverables</h2>
+          </div>
+          <div class="uses">
+            <div class="card use reveal">
+              <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M22 10L12 5 2 10l10 5 10-5z" /><path d="M6 12v5c3 2 9 2 12 0v-5" /></svg>Research</h3>
+              <ul>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Building network science</b> — centrality and community structure of spatial, MEP and structural graphs.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Space syntax from BIM</b> — integration and depth straight from IFC space boundaries.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Linked building data</b> — BOT / Brick-aligned RDF for semantic web and digital-twin studies.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Information requirements</b> — property coverage across classes and authoring tools.</span></li>
+              </ul>
+            </div>
+            <div class="card use reveal">
+              <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" /></svg>Industry</h3>
+              <ul>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Model QA / QC</b> — a scored health report before hand-over, with every finding traceable to objects.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>MEP tracing</b> — follow flow from plant to terminal and find disconnected ports.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Digital-twin onboarding</b> — export Brick / BOT graphs or a Neo4j database for FM platforms.</span></li>
+                <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg><span><b>Cross-tool coordination</b> — compare Revit and ArchiCAD exports against IFC classes.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── BIM to XR ── -->
+      <section class="block" id="xr">
+        <div class="wrap">
+          <div class="sec-head">
+            <span class="eyebrow">BIM → XR pipeline</span>
+            <h2>From authoring tools to immersive construction review</h2>
+            <p>BIMUniXchange started as an interoperability pipeline: export geometry and complete metadata from Revit or ArchiCAD, and bring both into Unity for XR — Quest 3, mobile and desktop VR.</p>
+          </div>
+          <div class="xr-flow reveal">
+            <span>Revit / ArchiCAD</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+            <span>OBJ + CSV</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+            <span>Unity · BIMUniXchange</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+            <span>XR · 4D simulation</span>
+          </div>
+          <div class="xr">
+            <article class="card reveal">
+              <div class="tag">Revit 2024 · 2025 · 2026</div>
+              <h3>ReUniXchange for Revit</h3>
+              <p>Revit add-in that exports building geometry (OBJ) together with element metadata (CSV). Available on the Autodesk App Store.</p>
+              <a class="btn sm" href="https://apps.autodesk.com/RVT/en/Detail/Index?id=6622158299438821562&appLang=en&os=Win64" target="_blank" rel="noopener noreferrer">Autodesk App Store ↗</a>
+            </article>
+            <article class="card reveal">
+              <div class="tag">Python · ArchiCAD API</div>
+              <h3>ArchUniXchange for ArchiCAD</h3>
+              <p>Scripts that assign unique IDs and extract ArchiCAD element metadata to the same tabular schema as the Revit exporter.</p>
+              <a class="btn sm" href="https://github.com/isaddiq/BIMUniXchange/tree/main/ArchUniXchange_Python%20Scripts" target="_blank" rel="noopener noreferrer">Scripts on GitHub ↗</a>
+            </article>
+            <article class="card reveal">
+              <div class="tag">Unity package · v1.1.0</div>
+              <h3>BIMUniXchange for Unity</h3>
+              <p>Imports geometry and metadata into Unity for interactive, metadata-rich XR review and 4D construction sequencing.</p>
+              <a class="btn sm" href="https://github.com/isaddiq/BIMUniXchange/releases" target="_blank" rel="noopener noreferrer">Releases ↗</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Research / citation ── -->
+      <section class="block alt" id="research">
+        <div class="wrap cite">
+          <div class="reveal">
+            <span class="eyebrow">Research</span>
+            <h2 style="font-size: clamp(26px, 3vw, 36px); letter-spacing: -0.035em; line-height: 1.15; margin: 10px 0 14px">Using BIMUniXchange in your work?</h2>
+            <p style="color: var(--text-2)">The project is MIT-licensed. If it supports academic research or industry projects, please cite it — and feel free to open an issue with feedback or results.</p>
+            <div class="author">
+              <div class="avatar">SR</div>
+              <div><b>Saddiq Ur Rehman</b><small>PhD Candidate in Architecture · Kyung Hee University</small></div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap">
+              <a class="btn sm" href="https://isaddiq.github.io" target="_blank" rel="noopener noreferrer">Author website ↗</a>
+              <a class="btn sm" href="https://github.com/isaddiq/BIMUniXchange/issues" target="_blank" rel="noopener noreferrer">Open an issue ↗</a>
+            </div>
+          </div>
+          <div class="reveal">
+<pre class="bib" id="bibtex">@software{isaddiq_BIMUniXchange_2025,
+  author       = {Saddiq Ur Rehman},
+  title        = {BIMUniXchange},
+  year         = {2025},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/isaddiq/BIMUniXchange}},
+}<button class="btn sm copy-btn" id="copyBib">Copy</button></pre>
+            <p style="font-size: 13px; color: var(--muted); margin-top: 10px">APA: isaddiq. (2025). <i>BIMUniXchange</i> [Computer software]. GitHub. https://github.com/isaddiq/BIMUniXchange</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CTA ── -->
+      <section style="padding-top: 96px">
+        <div class="wrap">
+          <div class="cta-band reveal">
+            <div>
+              <h2>Open a model and see its knowledge graph in seconds.</h2>
+              <p>No installation, no account, no upload.</p>
+            </div>
+            <a class="btn lg" href="src/ifctograph.html">Launch the Studio</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
     <footer>
-      <div class="footer-inner">
-        <span class="footer-copy"
-          >BIMUniXchange &mdash; Open Source BIM Visualization</span
-        >
-        <div class="footer-links">
-          <a
-            href="https://github.com/isaddiq/BIMUniXchange"
-            class="footer-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            >GitHub</a
-          >
-          <a
-            href="https://isaddiq.github.io"
-            class="footer-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            >by Saddiq Ur Rehman</a
-          >
+      <div class="wrap">
+        <div class="foot">
+          <div>
+            <a href="index.html" class="brand" style="padding: 0">
+              <span class="brand-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="5" cy="6" r="2.5" /><circle cx="19" cy="6" r="2.5" /><circle cx="12" cy="18" r="2.5" /><path d="M7.2 7.2l3.6 8.6M16.8 7.2l-3.6 8.6M7.5 6h9" /></svg></span>
+              BIMUniXchange
+            </a>
+            <p>Open-source BIM interoperability: knowledge graphs for analysis and an XR pipeline for immersive review.</p>
+          </div>
+          <div>
+            <h5>Studio</h5>
+            <a href="src/ifctograph.html">Open the Studio</a>
+            <a href="src/ifctograph.html?sample=ifc">IFC sample</a>
+            <a href="src/ifctograph.html?sample=revit">Revit sample</a>
+            <a href="src/ifctograph.html?sample=archicad">ArchiCAD sample</a>
+          </div>
+          <div>
+            <h5>Project</h5>
+            <a href="https://github.com/isaddiq/BIMUniXchange" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/isaddiq/BIMUniXchange/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+            <a href="https://github.com/isaddiq/BIMUniXchange/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+          </div>
+          <div>
+            <h5>Author</h5>
+            <a href="https://isaddiq.github.io" target="_blank" rel="noopener noreferrer">Saddiq Ur Rehman</a>
+            <a href="#research">How to cite</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© 2025 BIMUniXchange · MIT License</span>
+          <span>Files you open are processed locally in your browser.</span>
         </div>
       </div>
     </footer>
 
-    <!-- Floating visitor counter button -->
+    <!-- Floating visitor counter -->
     <button id="visitorBtn" aria-label="Visitor stats" aria-expanded="false" title="Visitor stats">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
     </button>
-
     <div id="visitorPopup" role="dialog" aria-label="Visitor stats">
       <span class="popup-label">Visitors by country</span>
       <a href="https://info.flagcounter.com/nA4d" target="_blank" rel="noopener noreferrer">
-        <img
-          src="https://s01.flagcounter.com/count2/nA4d/bg_FFFFFF/txt_475569/border_E2E8F0/columns_4/maxflags_20/viewers_0/labels_1/pageviews_1/flags_0/percent_0/"
-          alt="Visitor counter"
-          loading="lazy"
-          width="240"
-        />
+        <img src="https://s01.flagcounter.com/count2/nA4d/bg_FFFFFF/txt_475569/border_E2E8F0/columns_4/maxflags_20/viewers_0/labels_1/pageviews_1/flags_0/percent_0/" alt="Visitor counter" loading="lazy" width="240" />
       </a>
     </div>
 
     <script>
       (function () {
-        var btn = document.getElementById("visitorBtn");
-        var panel = document.getElementById("visitorPopup");
-        btn.addEventListener("click", function () {
-          var open = panel.classList.toggle("open");
-          btn.setAttribute("aria-expanded", open ? "true" : "false");
+        // Theme
+        const themeBtn = document.getElementById("themeBtn");
+        const effective = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        themeBtn.addEventListener("click", () => {
+          const next = effective() === "dark" ? "light" : "dark";
+          document.documentElement.dataset.theme = next;
+          try { localStorage.setItem("kg-theme", next); } catch (e) {}
         });
-        document.addEventListener("click", function (e) {
-          if (!btn.contains(e.target) && !panel.contains(e.target)) {
-            panel.classList.remove("open");
-            btn.setAttribute("aria-expanded", "false");
+
+        // Mobile menu
+        const menuBtn = document.getElementById("menuBtn");
+        const links = document.getElementById("navLinks");
+        menuBtn.addEventListener("click", () => {
+          const open = links.classList.toggle("open");
+          menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        links.addEventListener("click", (e) => {
+          if (e.target.tagName === "A") links.classList.remove("open");
+        });
+
+        // Visitor counter popup
+        const vBtn = document.getElementById("visitorBtn");
+        const vPop = document.getElementById("visitorPopup");
+        vBtn.addEventListener("click", () => {
+          const open = vPop.classList.toggle("open");
+          vBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        document.addEventListener("click", (e) => {
+          if (!vBtn.contains(e.target) && !vPop.contains(e.target)) {
+            vPop.classList.remove("open");
+            vBtn.setAttribute("aria-expanded", "false");
           }
         });
+
+        // Copy citation
+        document.getElementById("copyBib").addEventListener("click", (e) => {
+          const pre = document.getElementById("bibtex");
+          const text = pre.childNodes[0].textContent;
+          navigator.clipboard?.writeText(text).then(() => {
+            e.target.textContent = "Copied";
+            setTimeout(() => (e.target.textContent = "Copy"), 1500);
+          });
+        });
+
+        // Gallery
+        const SHOTS = [
+          { id: "kg", label: "Knowledge graph", color: "#6366f1", img: "studio-knowledge-graph", title: "The whole model as a knowledge graph", text: "Spatial structure, elements, types, materials, classifications and systems in one graph, coloured by discipline.", points: ["Inspector with IFC attributes, property sets and ontology IRIs", "Inferred edges drawn dashed, with the rule that produced them", "Search, neighbourhood expansion and shortest paths"], href: "src/ifctograph.html?sample=ifc" },
+          { id: "mep", label: "MEP flow", color: "#0891b2", img: "studio-mep-flow", title: "Systems and port-derived flow", text: "Distribution systems with their members, and directional feeds edges derived from IfcDistributionPort connectivity.", points: ["Animated flow particles from source to sink", "Unconnected ports flagged in model health", "Systems coloured by the discipline they serve"], href: "src/ifctograph.html?sample=ifc" },
+          { id: "space", label: "Space syntax", color: "#16a34a", img: "studio-space-syntax", title: "Space adjacency and integration", text: "Space-to-space adjacency and door / stair access from IfcRelSpaceBoundary, analysed with space-syntax measures.", points: ["Integration (1/RA), mean depth and depth from the exterior", "Justified access graph rooted at the exterior", "Network analytics drawer with communities and hubs"], href: "src/ifctograph.html?sample=ifc" },
+          { id: "revit", label: "Revit breakdown", color: "#ca8a04", img: "studio-revit-breakdown", title: "Category → Family → Type, from a Revit export", text: "The breakdown tree pivots elements by any attribute or property — here a 4,400-element Revit export.", points: ["Group size encodes element count", "Up to three levels, any attribute or property", "Revit category ↔ IFC class crosswalk in semantic mapping"], href: "src/ifctograph.html?sample=revit" },
+          { id: "health", label: "Model health", color: "#dc2626", img: "studio-model-health", title: "An information-quality audit you can see", text: "Twenty checks scored by severity and coverage; colour the graph by the worst finding of each object.", points: ["One click turns any finding into a subgraph", "Export findings with GlobalIds as CSV", "Covers identity, structure, semantics, properties and MEP"], href: "src/ifctograph.html?sample=ifc" },
+          { id: "types", label: "Types & classes", color: "#8b5cf6", img: "studio-taxonomy", title: "Taxonomy and classification crosswalk", text: "The IFC class hierarchy of the model with its type objects and classification references such as Uniclass.", points: ["Tidy tree layouts — radial, top-down, left-right", "Classification coverage per system", "Schema meta-graph aggregates relations between classes"], href: "src/ifctograph.html?sample=ifc" },
+        ];
+        const tabs = document.getElementById("galleryTabs");
+        const copy = document.getElementById("galleryCopy");
+        const img = document.getElementById("galleryImg");
+        tabs.innerHTML = SHOTS.map((s, i) => `<button class="tab" role="tab" aria-selected="${i === 0}" data-i="${i}"><i style="background:${s.color}"></i>${s.label}</button>`).join("");
+        const show = (i) => {
+          const s = SHOTS[i];
+          tabs.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.i == i ? "true" : "false"));
+          copy.innerHTML = `<h3>${s.title}</h3><p>${s.text}</p><ul>${s.points.map((p) => `<li>${p}</li>`).join("")}</ul><a class="btn primary" href="${s.href}">Open this view</a>`;
+          img.src = `src/images/screens/${s.img}.webp`;
+          img.alt = `Screenshot of the BIM Knowledge Graph Studio: ${s.title}`;
+        };
+        tabs.addEventListener("click", (e) => {
+          const t = e.target.closest(".tab");
+          if (t) show(+t.dataset.i);
+        });
+        show(0);
+        // preload the other screenshots once the page is idle
+        window.addEventListener("load", () => setTimeout(() => SHOTS.forEach((s) => (new Image().src = `src/images/screens/${s.img}.webp`)), 1200));
+
+        // Reveal on scroll
+        const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => entries.forEach((en) => en.isIntersecting && (en.target.classList.add("in"), io.unobserve(en.target))), { rootMargin: "0px 0px -8% 0px" }) : null;
+        document.querySelectorAll(".reveal").forEach((el) => (io ? io.observe(el) : el.classList.add("in")));
       })();
+
+      // Hero: a small live knowledge graph of a two-storey building
+      window.addEventListener("DOMContentLoaded", () => {
+        if (!window.d3) return;
+        const host = document.getElementById("heroGraph");
+        const tip = document.getElementById("hgTip");
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+        const D = { spatial: "--c-spatial", struct: "--c-struct", arch: "--c-arch", hvac: "--c-hvac", plumb: "--c-plumb", elec: "--c-elec", sem: "--c-sem" };
+        const nodes = [];
+        const links = [];
+        const add = (n) => (nodes.push(n), n);
+        const link = (a, b, kind) => links.push({ source: a.id, target: b.id, kind });
+        let seed = 7;
+        const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+
+        const project = add({ id: "p", label: "Riverside Community Hub", d: "spatial", r: 9, shape: "hex", sub: "IfcProject" });
+        const building = add({ id: "b", label: "Community Hub", d: "spatial", r: 7.5, shape: "hex", sub: "IfcBuilding · bot:Building" });
+        link(project, building);
+        const systems = {
+          hvac: add({ id: "sys-h", label: "Supply Air", d: "hvac", r: 8, shape: "ring", sub: "IfcDistributionSystem · VENTILATION" }),
+          plumb: add({ id: "sys-p", label: "Domestic Cold Water", d: "plumb", r: 7, shape: "ring", sub: "IfcDistributionSystem" }),
+          elec: add({ id: "sys-e", label: "Lighting", d: "elec", r: 7, shape: "ring", sub: "IfcDistributionSystem · LIGHTING" }),
+        };
+        const mats = ["Reinforced concrete", "Brick cavity wall", "Steel S355"].map((m, i) => add({ id: "m" + i, label: m, d: "sem", r: 4.5, shape: "tri", sub: "IfcMaterial" }));
+        const ahu = add({ id: "ahu", label: "AHU-01", d: "hvac", r: 5.5, shape: "circle", sub: "IfcUnitaryEquipment · brick:HVAC_Equipment" });
+        link(ahu, systems.hvac, "member");
+        let prevDuct = ahu;
+        ["Ground Floor", "First Floor"].forEach((sn, si) => {
+          const st = add({ id: "s" + si, label: sn, d: "spatial", r: 6.5, shape: "hex", sub: "IfcBuildingStorey · bot:Storey" });
+          link(building, st);
+          for (let k = 0; k < 4; k++) {
+            const sp = add({ id: `sp${si}${k}`, label: `Space ${si ? 1 : "G"}0${k + 1}`, d: "spatial", r: 4.2, shape: "hex", sub: "IfcSpace · bot:Space" });
+            link(st, sp);
+            const kinds = [["arch", "Door", "IfcDoor"], ["arch", "Window", "IfcWindow"], ["struct", "Column", "IfcColumn"], ["elec", "Light fixture", "IfcLightFixture"], ["hvac", "Diffuser", "IfcAirTerminal"], ["plumb", "Wash basin", "IfcSanitaryTerminal"]];
+            const n = 3 + Math.floor(rnd() * 3);
+            for (let e = 0; e < n; e++) {
+              const [d, nm, cls] = kinds[Math.floor(rnd() * kinds.length)];
+              const el = add({ id: `e${si}${k}${e}`, label: `${nm} ${si ? 1 : "G"}0${k + 1}`, d, r: 3.2, shape: "circle", sub: cls });
+              link(sp, el);
+              if (d === "hvac") {
+                link(el, systems.hvac, "member");
+                links.push({ source: prevDuct.id, target: el.id, kind: "flow" });
+              } else if (d === "plumb") link(el, systems.plumb, "member");
+              else if (d === "elec") link(el, systems.elec, "member");
+              if (d === "struct" || d === "arch") link(el, mats[Math.floor(rnd() * 3)], "mat");
+            }
+          }
+          const duct = add({ id: "duct" + si, label: `Supply riser ${sn}`, d: "hvac", r: 3.6, shape: "circle", sub: "IfcDuctSegment" });
+          link(st, duct);
+          links.push({ source: prevDuct.id, target: duct.id, kind: "flow" });
+          link(duct, systems.hvac, "member");
+          prevDuct = duct;
+        });
+
+        const svg = d3.select(host).insert("svg", ":first-child").attr("role", "img").attr("aria-label", "Animated knowledge graph of a sample building");
+        const g = svg.append("g");
+        const W = () => host.clientWidth;
+        const H = () => host.clientHeight;
+        const color = (n) => css(D[n.d]);
+        const linkEl = g.append("g").selectAll("line").data(links).join("line")
+          .attr("stroke-width", (l) => (l.kind === "flow" ? 1.6 : l.kind ? 0.6 : 0.9))
+          .attr("class", (l) => (l.kind === "flow" ? "flow" : null));
+        const hex = (r) => d3.range(6).map((i) => [r * 1.1 * Math.cos((Math.PI / 3) * i + Math.PI / 6), r * 1.1 * Math.sin((Math.PI / 3) * i + Math.PI / 6)].join(",")).join(" ");
+        const nodeEl = g.append("g").selectAll("g").data(nodes).join("g").style("cursor", "pointer");
+        nodeEl.each(function (n) {
+          const s = d3.select(this);
+          if (n.shape === "hex") s.append("polygon").attr("points", hex(n.r));
+          else if (n.shape === "tri") s.append("polygon").attr("points", `0,${-n.r * 1.2} ${n.r * 1.1},${n.r * 0.8} ${-n.r * 1.1},${n.r * 0.8}`);
+          else s.append("circle").attr("r", n.r);
+        });
+        const labels = g.append("g").selectAll("text").data(nodes.filter((n) => n.r >= 6.5)).join("text")
+          .text((n) => n.label).attr("font-size", 10.5).attr("font-weight", 600).attr("text-anchor", "middle")
+          .attr("paint-order", "stroke").attr("stroke-width", 3).attr("font-family", "Inter, system-ui, sans-serif");
+
+        const paint = () => {
+          const bg = css("--bg-2");
+          nodeEl.selectAll("circle,polygon")
+            .attr("fill", (n) => (n.shape === "ring" ? bg : color(n)))
+            .attr("stroke", (n) => (n.shape === "ring" ? color(n) : bg))
+            .attr("stroke-width", (n) => (n.shape === "ring" ? n.r * 0.38 : 1));
+          linkEl.attr("stroke", (l) => (l.kind === "flow" ? css("--c-hvac") : css("--border-strong"))).attr("stroke-opacity", (l) => (l.kind === "flow" ? 0.9 : l.kind ? 0.35 : 0.85));
+          labels.attr("fill", css("--text")).attr("stroke", bg);
+        };
+        paint();
+        new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", paint);
+
+        const sim = d3.forceSimulation(nodes)
+          .force("link", d3.forceLink(links).id((n) => n.id).distance((l) => (l.kind === "member" || l.kind === "mat" ? 55 : 24 + l.source.r * 2)).strength((l) => (l.kind === "member" || l.kind === "mat" ? 0.04 : 0.7)))
+          .force("charge", d3.forceManyBody().strength((n) => -40 - n.r * 12))
+          .force("collide", d3.forceCollide((n) => n.r + 3))
+          .force("x", d3.forceX(0).strength(0.05))
+          .force("y", d3.forceY(0).strength(0.07))
+          .alphaDecay(reduce ? 0.05 : 0.012);
+        if (!reduce) sim.alphaTarget(0.015);
+        // keep the whole graph inside the panel, clear of the legend and tooltip
+        let view = { k: 1, cx: 0, cy: 0 }, ticks = 0;
+        const fitView = () => {
+          const w = W(), h = H();
+          const [x0, x1] = d3.extent(nodes, (n) => n.x), [y0, y1] = d3.extent(nodes, (n) => n.y);
+          const k = Math.min(1.25, (w - 50) / (x1 - x0 + 30), (h - 120) / (y1 - y0 + 30));
+          const target = { k, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+          const a = ticks < 5 ? 1 : 0.08;
+          view = { k: view.k + (target.k - view.k) * a, cx: view.cx + (target.cx - view.cx) * a, cy: view.cy + (target.cy - view.cy) * a };
+        };
+        sim.on("tick", () => {
+          const w = W(), h = H();
+          if (ticks++ % 3 === 0) fitView();
+          g.attr("transform", `translate(${w / 2},${h / 2 + 18}) scale(${view.k}) translate(${-view.cx},${-view.cy})`);
+          linkEl.attr("x1", (l) => l.source.x).attr("y1", (l) => l.source.y).attr("x2", (l) => l.target.x).attr("y2", (l) => l.target.y);
+          nodeEl.attr("transform", (n) => `translate(${n.x},${n.y})`);
+          labels.attr("x", (n) => n.x).attr("y", (n) => n.y + n.r + 13);
+        });
+        if (reduce) sim.tick(300);
+
+        // highlight neighbourhood on hover
+        const nb = new Map(nodes.map((n) => [n.id, new Set([n.id])]));
+        links.forEach((l) => {
+          nb.get(l.source.id).add(l.target.id);
+          nb.get(l.target.id).add(l.source.id);
+        });
+        nodeEl.on("mouseenter", (ev, n) => {
+          const s = nb.get(n.id);
+          nodeEl.style("opacity", (m) => (s.has(m.id) ? 1 : 0.15));
+          linkEl.style("opacity", (l) => (l.source.id === n.id || l.target.id === n.id ? 1 : 0.06));
+          labels.style("opacity", (m) => (s.has(m.id) ? 1 : 0.15));
+          tip.innerHTML = `<b>${n.label}</b><small>${n.sub} · ${s.size - 1} connections</small>`;
+        });
+        nodeEl.on("mouseleave", () => {
+          nodeEl.style("opacity", 1);
+          linkEl.style("opacity", 1);
+          labels.style("opacity", 1);
+          tip.innerHTML = "<b>Hover the graph</b><small>Spatial structure, systems and inferred MEP flow</small>";
+        });
+        nodeEl.call(d3.drag()
+          .on("start", (ev, n) => { if (!ev.active) sim.alphaTarget(0.2).restart(); n.fx = n.x; n.fy = n.y; })
+          .on("drag", (ev, n) => { n.fx = ev.x; n.fy = ev.y; })
+          .on("end", (ev, n) => { if (!ev.active) sim.alphaTarget(reduce ? 0 : 0.015); n.fx = null; n.fy = null; }));
+        // pause animation when the hero is off-screen
+        if ("IntersectionObserver" in window && !reduce) {
+          new IntersectionObserver(([en]) => (en.isIntersecting ? sim.alphaTarget(0.015).restart() : sim.stop())).observe(host);
+        }
+      });
     </script>
   </body>
 </html>
